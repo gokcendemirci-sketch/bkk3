@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bangkok Rehberi · Tur Ajanı</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,900&family=Outfit:wght@300;400;500;600&display=swap');
+
+  :root {
+    --ink: #1a1410;
+    --paper: #f4ece0;
+    --paper-2: #ece0cf;
+    --gold: #b8862f;
+    --gold-deep: #8a5e1c;
+    --crimson: #8c2f24;
+    --teal: #2c5f5a;
+    --jade: #3a6b4f;
+    --line: rgba(26,20,16,0.14);
+    --shadow: rgba(60,40,20,0.18);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    color: var(--ink);
+    background:
+      radial-gradient(ellipse at 15% 0%, rgba(184,134,47,0.10), transparent 55%),
+      radial-gradient(ellipse at 90% 100%, rgba(44,95,90,0.10), transparent 50%),
+      var(--paper);
+    min-height: 100vh;
+    line-height: 1.55;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 28px 20px 80px; }
+
+  /* Header */
+  header { text-align: center; padding: 18px 0 26px; position: relative; }
+  .kicker {
+    font-size: 11px; letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--gold-deep); font-weight: 600; margin-bottom: 12px;
+  }
+  h1 {
+    font-family: 'Fraunces', serif; font-weight: 900;
+    font-size: clamp(40px, 9vw, 78px); line-height: 0.92;
+    letter-spacing: -0.02em; color: var(--ink);
+  }
+  h1 em { font-style: italic; color: var(--crimson); }
+  .sub {
+    margin-top: 14px; font-size: 14px; color: #6b5a45;
+    max-width: 560px; margin-left: auto; margin-right: auto;
+  }
+  .rule {
+    width: 64px; height: 2px; background: var(--gold);
+    margin: 20px auto 0; position: relative;
+  }
+  .rule::before, .rule::after {
+    content: '◆'; position: absolute; top: -8px; font-size: 9px; color: var(--gold);
+  }
+  .rule::before { left: -18px; } .rule::after { right: -18px; }
+
+  /* Lang toggle */
+  .lang {
+    position: absolute; top: 8px; right: 0; display: flex; gap: 4px;
+    border: 1px solid var(--line); border-radius: 30px; padding: 3px;
+    background: rgba(255,255,255,0.4);
+  }
+  .lang button {
+    border: none; background: transparent; font-family: 'Outfit';
+    font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 30px;
+    cursor: pointer; color: #8a7860; transition: all 0.2s;
+  }
+  .lang button.on { background: var(--ink); color: var(--paper); }
+
+  /* Search */
+  .search-shell {
+    margin: 8px 0 14px; position: relative;
+  }
+  .search-box {
+    display: flex; align-items: center; gap: 12px;
+    background: #fffaf2; border: 1.5px solid var(--ink);
+    border-radius: 16px; padding: 4px 6px 4px 18px;
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+  .search-box svg { flex-shrink: 0; color: var(--gold-deep); }
+  #q {
+    flex: 1; border: none; background: transparent; outline: none;
+    font-family: 'Outfit'; font-size: 17px; color: var(--ink); padding: 12px 0;
+  }
+  #q::placeholder { color: #b0a088; }
+  .clear-btn {
+    border: none; background: var(--ink); color: var(--paper);
+    width: 40px; height: 40px; border-radius: 11px; cursor: pointer;
+    font-size: 18px; display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s;
+  }
+  .clear-btn:active { transform: scale(0.9); }
+
+  /* Filter chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 26px; }
+  .chip {
+    border: 1px solid var(--line); background: rgba(255,255,255,0.5);
+    border-radius: 30px; padding: 7px 15px; font-size: 12.5px; font-weight: 500;
+    cursor: pointer; transition: all 0.18s; color: #5d4e3a; white-space: nowrap;
+  }
+  .chip:hover { border-color: var(--gold); }
+  .chip.on { background: var(--crimson); color: #fff; border-color: var(--crimson); }
+
+  /* Intro note */
+  .note {
+    background: rgba(140,47,36,0.07); border-left: 3px solid var(--crimson);
+    padding: 13px 16px; border-radius: 0 10px 10px 0; font-size: 13px;
+    color: #6b4a40; margin-bottom: 22px;
+  }
+  .note b { color: var(--crimson); }
+
+  /* Cards */
+  #results { display: flex; flex-direction: column; gap: 16px; }
+  .card {
+    background: #fffaf2; border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px 22px;
+    box-shadow: 0 2px 0 var(--shadow);
+    transition: transform 0.18s, box-shadow 0.18s;
+    animation: rise 0.4s both;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px var(--shadow); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+  .card-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+  .card h3 {
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 23px;
+    line-height: 1.1; letter-spacing: -0.01em;
+  }
+  .card .thai { font-style: italic; color: var(--gold-deep); font-size: 14px; font-family: 'Fraunces', serif; }
+  .tag {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    font-weight: 600; padding: 3px 9px; border-radius: 20px; color: #fff;
+  }
+  .t-temple { background: var(--crimson); }
+  .t-museum { background: var(--teal); }
+  .t-market { background: var(--gold-deep); }
+  .t-food { background: var(--jade); }
+  .t-cafe { background: #a0622c; }
+  .t-area { background: #6b5a45; }
+  .t-tip { background: #4a4a4a; }
+
+  .card p { font-size: 14px; color: #4d3f2e; margin: 8px 0; }
+
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .fact { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #5d4e3a; }
+  .fact b { color: var(--ink); font-weight: 600; }
+  .fact .ic { color: var(--gold-deep); font-size: 13px; }
+
+  .src { margin-top: 10px; font-size: 11px; color: #a08a6c; font-style: italic; }
+
+  .empty {
+    text-align: center; padding: 50px 20px; color: #a08a6c;
+    font-family: 'Fraunces', serif; font-style: italic; font-size: 18px;
+  }
+  .count { font-size: 12px; color: #8a7860; margin-bottom: 14px; letter-spacing: 0.04em; }
+
+  footer { text-align: center; margin-top: 40px; font-size: 11px; color: #a08a6c; letter-spacing: 0.05em; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 6px; justify-content: center; margin: 6px 0 22px; }
+  .tab {
+    border: 1.5px solid var(--ink); background: rgba(255,255,255,0.4);
+    font-family: 'Fraunces', serif; font-size: 15px; font-weight: 500;
+    padding: 9px 22px; border-radius: 30px; cursor: pointer; color: var(--ink);
+    transition: all 0.2s;
+  }
+  .tab.on { background: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--shadow); }
+  .pane { display: none; }
+  .pane.on { display: block; animation: rise 0.4s both; }
+
+  /* Map */
+  #map { height: 560px; border-radius: 16px; border: 1.5px solid var(--ink); box-shadow: 5px 5px 0 var(--shadow); overflow: hidden; }
+  .route-intro { font-size: 13.5px; color: #5d4e3a; margin-bottom: 14px; background: rgba(184,134,47,0.08); border-left: 3px solid var(--gold); padding: 12px 16px; border-radius: 0 10px 10px 0; }
+  .route-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .rbtn {
+    border: 1.5px solid var(--ink); background: rgba(255,255,255,0.5);
+    border-radius: 30px; padding: 8px 18px; font-family: 'Fraunces', serif;
+    font-size: 14px; font-weight: 500; cursor: pointer; color: var(--ink); transition: all 0.18s;
+  }
+  .rbtn.on { background: var(--teal); color: #fff; border-color: var(--teal); }
+  .stop-list { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .stop {
+    display: flex; gap: 14px; align-items: flex-start; background: #fffaf2;
+    border: 1px solid var(--line); border-radius: 12px; padding: 13px 16px;
+    cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+  }
+  .stop:hover { transform: translateX(3px); box-shadow: 0 3px 10px var(--shadow); }
+  .stop .num {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%;
+    background: var(--crimson); color: #fff; font-family: 'Fraunces', serif;
+    font-weight: 600; display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .stop .info h4 { font-family: 'Fraunces', serif; font-size: 16px; font-weight: 600; }
+  .stop .info p { font-size: 12.5px; color: #5d4e3a; margin: 3px 0 0; }
+  .stop .time { font-size: 11px; color: var(--gold-deep); font-weight: 600; margin-top: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="lang">
+      <button id="tr" class="on" onclick="setLang('tr')">TR</button>
+      <button id="en" onclick="setLang('en')">EN</button>
+    </div>
+    <div class="kicker" id="kicker">Tur Rehberi Ajanı</div>
+    <h1>Bang<em>kok</em></h1>
+    <p class="sub" id="sub">Tapınaklar, müzeler, çarşılar ve yemek. Bir şey sor, rehber gibi cevap vereyim — internet gerekmez.</p>
+    <div class="rule"></div>
+  </header>
+
+  <div class="note" id="note">
+    <b>2026 notu:</b> Tayland Kraliçe Annesi Ekim 2026'ya dek lying-in-state halinde; Grand Palace çevresinde yas ziyaretçileri yoğun olabilir, gitmeden o günkü açık/kapalı durumunu teyit et. Tapınaklar nakit alır, kıyafet kuralı katıdır (omuz & diz kapalı).
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" id="tab-guide" onclick="setTab('guide')">Kartlar / Arama</button>
+    <button class="tab" id="tab-map" onclick="setTab('map')">Harita / Rota</button>
+  </div>
+
+  <div class="pane on" id="pane-guide">
+  <div class="search-shell">
+    <div class="search-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+      <input id="q" type="text" placeholder="Ne sormak istersin? örn: Wat Pho giriş, Chinatown yemek, sunset tapınak…" autocomplete="off">
+      <button class="clear-btn" onclick="clearQ()" title="Temizle">×</button>
+    </div>
+  </div>
+
+  <div class="chips" id="chips"></div>
+
+  <div class="count" id="count"></div>
+  <div id="results"></div>
+  </div>
+
+  <div class="pane" id="pane-map">
+    <div class="route-picker" id="routePicker"></div>
+    <div class="route-intro" id="routeIntro"></div>
+    <div id="map"></div>
+    <div class="stop-list" id="stopList"></div>
+  </div>
+
+  <footer>Fodor's Bangkok + güncel 2026 web verisi · çevrimdışı çalışır</footer>
+</div>
+
+<script>
+/* ---------- ROUTES (videolardan) ---------- */
+const ROUTES = [
+{
+  id:'royal',
+  title_tr:'Royal Avenue (Ratchadamnoen)', title_en:'Royal Avenue (Ratchadamnoen)',
+  intro_tr:'Bangkok\'un en tarihî caddesi boyunca güneyden (Grand Palace) kuzeye (Dusit Sarayı) ~4 km\'lik yürüyüş. Caddenin üç bölümünü takip eder; yol üstündeki tapınak, anıt, müze ve meydanları birleştirir. Yarım–tam gün.',
+  intro_en:'A ~4 km walk along Bangkok\'s most historic avenue, south (Grand Palace) to north (Dusit Palace). Follows the avenue\'s three sections, linking temples, monuments, museums and squares. Half to full day.',
+  mode:'walking',
+  stops:[
+    {lat:13.7498558, lng:100.4915765, t:'08:30', n_tr:'Grand Palace & Wat Phra Kaew', n_en:'Grand Palace & Wat Phra Kaew', d_tr:'Caddenin başı. 1782/84, 130 yıl kraliyet evi. Sabah erken git.', d_en:'Start of the avenue. 1782/84, 130 yrs royal home. Go early.'},
+    {lat:13.7558693, lng:100.4932804, t:'10:45', n_tr:'Sanam Luang', n_en:'Sanam Luang', d_tr:'1784 kraliyet meydanı. İlk hafta sonu pazarı buradaydı.', d_en:'1784 royal field. The original weekend market was here.'},
+    {lat:13.7566941, lng:100.5019322, t:'11:30', n_tr:'Demokrasi Anıtı', n_en:'Democracy Monument', d_tr:'1932 devrimi anıtı; orta bölümün simgesi.', d_en:'1932 revolution monument; icon of the middle section.'},
+    {lat:13.7561405, lng:100.5064072, t:'12:00', n_tr:'King Prajadhipok Müzesi (Rama VII)', n_en:'King Prajadhipok Museum (Rama VII)', d_tr:'Son mutlak hükümdar. 1906 İngiliz mağaza binası. Ücretsiz.', d_en:'Last absolute monarch. 1906 British store building. Free.'},
+    {lat:13.7556156, lng:100.5055074, t:'13:45', n_tr:'Fort Mahakan & Eski Sur', n_en:'Fort Mahakan & Old City Wall', d_tr:'1782 surlarından kalan 2 parçadan biri. İki ünlü kedi.', d_en:'One of 2 surviving 1782 wall sections. Two famous cats.'},
+    {lat:13.7527691, lng:100.5066745, t:'14:15', n_tr:'Wat Saket (Golden Mount)', n_en:'Wat Saket (Golden Mount)', d_tr:'Yapay tepe, 318 basamak, manzara. Giriş 100 ฿.', d_en:'Artificial hill, 318 steps, views. Entry 100 ฿.'},
+    {lat:13.771708, lng:100.5131335, t:'15:30', n_tr:'Ananta Samakhom Taht Salonu (Dusit)', n_en:'Ananta Samakhom Throne Hall (Dusit)', d_tr:'Caddenin kuzey ucu. İtalyan Rönesans tarzı. İçi kapalı, dıştan görkemli.', d_en:'North end. Italian Renaissance style. Closed inside, grand from outside.'}
+  ]
+},
+{
+  id:'thonburi',
+  title_tr:'Thonburi Kanal Turu', title_en:'Thonburi Canal Tour',
+  intro_tr:'Nehrin Thonburi yakasında tekneyle tarih, tapınak ve sanat turu. Portekiz mahallesi Kudi Chin\'den başlar, Khlong Bangkok Yai boyunca dev Buda\'lı Wat Paknam\'a, ardından Khlong Bang Luang\'daki Artist\'s House\'a uzanır. Tarifeli tekne yok — özel/tur teknesi gerekir.',
+  intro_en:'A boat tour of history, temples and art on the Thonburi bank. Starts at the Portuguese quarter Kudi Chin, runs along Khlong Bangkok Yai to Wat Paknam with its giant Buddha, then to the Artist\'s House on Khlong Bang Luang. No scheduled boat — needs a private/tour boat.',
+  mode:'boat',
+  stops:[
+    {lat:13.7391169, lng:100.4938326, t:'09:00', n_tr:'Santa Cruz Kilisesi (Kudi Chin)', n_en:'Santa Cruz Church (Kudi Chin)', d_tr:'1769 Portekiz yerleşimi. Kral Taksin\'in bağışı. Khanom farang keki.', d_en:'1769 Portuguese settlement. Gifted by King Taksin. Khanom farang cake.'},
+    {lat:13.739346, lng:100.4929733, t:'09:30', n_tr:'Baan Kudichin Müzesi', n_en:'Baan Kudichin Museum', d_tr:'Siam-Portekiz tarihi. 1511 ilk elçi, 1518 ilk antlaşma. Ücretsiz.', d_en:'Siam-Portugal history. 1511 first envoy, 1518 first treaty. Free.'},
+    {lat:13.7217762, lng:100.4703579, t:'11:00', n_tr:'Wat Paknam (Dev Buda)', n_en:'Wat Paknam (Big Buddha)', d_tr:'66 m dev Buda (2021), cam yeşili stupa. Ücretsiz. 16. yy kökenli.', d_en:'66 m Big Buddha (2021), green glass stupa. Free. 16th-c origins.'},
+    {lat:13.7202693, lng:100.4715645, t:'12:00', n_tr:'Wat Khun Chan', n_en:'Wat Khun Chan', d_tr:'Wat Paknam karşısı, sakin tapınak. Dev Buda fotoğrafı için ideal nokta.', d_en:'Across from Wat Paknam, quiet temple. Great spot to photograph the giant Buddha.'},
+    {lat:13.7313624, lng:100.4631997, t:'13:00', n_tr:'Artist\'s House (Khlong Bang Luang)', n_en:'Artist\'s House (Khlong Bang Luang)', d_tr:'250 yıllık ahşap ev, sanat merkezi (2009). Eski yüzen pazar. Atölyeler.', d_en:'250-yr wooden house, art hub (2009). Old floating market. Workshops.'}
+  ]
+},
+{
+  id:'lumpini',
+  title_tr:'Lumpini Park & Çevresi', title_en:'Lumpini Park & Surroundings',
+  intro_tr:'Bangkok\'un ilk halka açık parkı ve çevresinde bir tur. Sakin Wireless Road kapısından (Gate 1) girip parkın içinden — varan kertenkeleler, göl, Sagittarius heykeli — ana kapıdaki Rama VI heykeline, oradan Sarasin ve Rama IV kenarlarını dolaşan bir devre. Sabah erken ya da akşamüstü ideal.',
+  intro_en:'A loop through Bangkok\'s first public park and its edges. Enter via the quiet Wireless Road gate (Gate 1), cross the park — monitor lizards, lake, Sagittarius sculpture — to the Rama VI statue at the main gate, then circle the Sarasin and Rama IV edges. Best early morning or late afternoon.',
+  mode:'walking',
+  stops:[
+    {lat:13.7314281, lng:100.5416984, t:'07:30', n_tr:'Lumpini Park (Gate 1, Wireless Rd)', n_en:'Lumpini Park (Gate 1, Wireless Rd)', d_tr:'Sakin giriş. 1925, Tayland\'ın ilk parkı. Varan kertenkeleler serbest.', d_en:'Quiet entrance. 1925, Thailand\'s first park. Free-roaming monitor lizards.'},
+    {lat:13.7253968, lng:100.5460606, t:'08:00', n_tr:'MRT Lumphini / Sarasin köşesi', n_en:'MRT Lumphini / Sarasin corner', d_tr:'Eski Suan Lum gece pazarı buradaydı. One Bangkok projesi karşıda.', d_en:'Old Suan Lum night bazaar was here. One Bangkok project opposite.'},
+    {lat:13.7342978, lng:100.5422016, t:'08:30', n_tr:'Sarasin Road', n_en:'Sarasin Road', d_tr:'Parkın kuzey kenarı; gölgeli + lüks penthouse tarafı.', d_en:'Park\'s north edge; shady side + luxury penthouses.'},
+    {lat:13.7324519, lng:100.535766, t:'09:00', n_tr:'King Chulalongkorn Hastanesi', n_en:'King Chulalongkorn Hospital', d_tr:'1914\'ten kalma dev kompleks, parkın batı karşısı (Ratchadamri).', d_en:'Huge complex from 1914, west of the park (Ratchadamri).'},
+    {lat:13.7299508, lng:100.5376744, t:'09:30', n_tr:'Rama VI Heykeli & Ana Kapı', n_en:'Rama VI Statue & Main Gate', d_tr:'Saladaeng kavşağı. Parkı 1925\'te halka veren kral. MRT Si Lom bitişiği.', d_en:'Saladaeng intersection. The king who gave the park in 1925. Next to MRT Si Lom.'}
+  ]
+},
+{
+  id:'riverwalk',
+  title_tr:'Talat Noi Nehir Yürüyüşü', title_en:'Talat Noi River Walk',
+  intro_tr:'Nehrin doğu yakasında, Chinatown\'ın güneyindeki tarihî liman ve tüccar mahallelerinde bir yürüyüş. Chao Phraya Sky Park\'tan başlar; Khlong San\'daki cep parkı ve eski limanlardan Talat Noi\'nın daracık sokaklarına, eski Çin konaklarına ve nehir ağzındaki kaleye uzanır. Az turistli, sokak yemeği bol. Şort + bol su öneriliyor.',
+  intro_en:'A walk through historic port and merchant quarters on the river\'s east bank, south of Chinatown. Starts at the Chao Phraya Sky Park; from the Khlong San pocket park and old ports to Talat Noi\'s narrow lanes, old Chinese mansions and the riverside fort. Few tourists, lots of street food. Wear shorts + bring water.',
+  mode:'walking',
+  stops:[
+    {lat:13.7390161, lng:100.4984869, t:'15:30', n_tr:'Chao Phraya Sky Park', n_en:'Chao Phraya Sky Park', d_tr:'Eski demiryolu köprüsü (2016 yeşil alan). Nehri yürüyerek geç, manzara.', d_en:'Old rail bridge (2016 green space). Cross the river on foot, views.'},
+    {lat:13.7366348, lng:100.4994605, t:'16:00', n_tr:'Princess Mother Memorial Park', n_en:'Princess Mother Memorial Park', d_tr:'1993 cep parkı + müze. Nana ailesi bağışı, eski RBMC binaları.', d_en:'1993 pocket park + museum. Nana family gift, old RBMC buildings.'},
+    {lat:13.7343611, lng:100.5076162, t:'16:45', n_tr:'Lhong 1919', n_en:'Lhong 1919', d_tr:'1850 liman, Sino-Tay mimari + Çin türbesi. Açık mı kontrol et.', d_en:'1850 port, Sino-Thai architecture + Chinese shrine. Check if open.'},
+    {lat:13.7336292, lng:100.5120163, t:'17:15', n_tr:'So Heng Tai Konağı', n_en:'So Heng Tai Mansion', d_tr:'~250 yıllık Çin konağı, avluda dalış havuzu. Talat Noi.', d_en:'~250-yr Chinese mansion, courtyard diving pool. Talat Noi.'},
+    {lat:13.7312207, lng:100.5132944, t:'17:45', n_tr:'Holy Rosary Kilisesi', n_en:'Holy Rosary Church', d_tr:'1784 ilk Portekiz kilisesi, Gotik Revival. İbadet yeri, saygılı ol.', d_en:'1784 first Portuguese church, Gothic Revival. Place of worship, be respectful.'},
+    {lat:13.7305, lng:100.5128, t:'18:15', n_tr:'Pom Pi Chai Fort & Kanal Ağzı', n_en:'Pom Pi Chai Fort & Canal Mouth', d_tr:'1852 kale, ayakta kalan 3 kaleden biri. Nehir ağzında gün batımı.', d_en:'1852 fort, one of 3 surviving. Sunset at the canal mouth.'}
+  ]
+},
+{
+  id:'modern',
+  title_tr:'Modern Kafe & Tasarım Turu (Doğu)', title_en:'Modern Café & Design Tour (East)',
+  intro_tr:'Şehrin doğu/modern tarafında BTS hattı boyunca kafe, tasarım ve manzara turu. Ekkamai\'nin kavurma kafesinden Phrom Phong\'un şık yaşam tarzı alanlarına, oradan Lumpini karşısındaki Dusit Central Park\'ın çatı bahçesine uzanır. Tamamen BTS/MRT ile yapılabilir.',
+  intro_en:'A café, design and views tour along the BTS line on the modern, eastern side of the city. From Ekkamai\'s roastery to Phrom Phong\'s chic lifestyle spaces, then to the rooftop garden of Dusit Central Park opposite Lumpini. Doable entirely by BTS/MRT.',
+  mode:'walking',
+  stops:[
+    {lat:13.7351217, lng:100.5868581, t:'09:00', n_tr:'Sam Roasters (Ekkamai)', n_en:'Sam Roasters (Ekkamai)', d_tr:'Eski beyaz evde özel kahve kavurma. "Snow" dirty coffee. Soi Ekkamai 15.', d_en:'Specialty roastery in an old white house. "Snow" dirty coffee. Soi Ekkamai 15.'},
+    {lat:13.7300, lng:100.5697, t:'11:00', n_tr:'Phrom Phong (Emporium çevresi)', n_en:'Phrom Phong (around Emporium)', d_tr:'Şık yaşam tarzı alanları, otopark katında gizli kafeler, Benjasiri Park manzarası.', d_en:'Chic lifestyle spaces, cafés hidden in a parking level, Benjasiri Park views.'},
+    {lat:13.728760, lng:100.537556, t:'13:30', n_tr:'Dusit Central Park & Sky Garden', n_en:'Dusit Central Park & Sky Garden', d_tr:'Çatı bahçesi (ücretsiz), Lumpini manzarası, Onibus Coffee. Eski Dusit Thani yerinde.', d_en:'Rooftop garden (free), Lumpini views, Onibus Coffee. On the old Dusit Thani site.'},
+    {lat:13.7342978, lng:100.5422016, t:'15:30', n_tr:'Sarasin Caddesi (İsveç kafe)', n_en:'Sarasin Rd (Swedish café)', d_tr:'Lumpini kenarı; mavi-beyaz İsveç kafe, brunch & kek.', d_en:'Lumpini edge; blue-white Swedish café, brunch & cake.'}
+  ]
+},
+{
+  id:'kanchanaburi',
+  title_tr:'Kanchanaburi Günübirlik Tur', title_en:'Kanchanaburi Day Trip',
+  intro_tr:'Bangkok\'tan ~2-3 saat batıda, 2. Dünya Savaşı tarihi, şelaleler, tapınaklar ve doğa. Dragon Temple (yol üstü) → Tha Muang bölgesi (dev ağaç, Tiger Cave) → Kanchanaburi şehir merkezi (Kwai Köprüsü, müzeler) → batıya (Tham Krasae, şelaleler). Erawan Milli Parkı uzak olduğu için tam gün veya 2 gün önerilir.',
+  intro_en:'~2-3 hours west of Bangkok: WWII history, waterfalls, temples and nature. Dragon Temple (en route) → Tha Muang area (giant tree, Tiger Cave) → Kanchanaburi city centre (Kwai Bridge, museums) → westward (Tham Krasae, waterfalls). Erawan NP is far, so a full day or 2 days recommended.',
+  mode:'driving',
+  stops:[
+    {lat:13.7352948, lng:100.215656, t:'08:00', n_tr:'Dragon Temple (Wat Samphran)', n_en:'Dragon Temple (Wat Samphran)', d_tr:'Nakhon Pathom, yol üstü. Dev ejderha + 17 katlı kule. 80 ฿.', d_en:'Nakhon Pathom, en route. Giant dragon + 17-storey tower. 80 ฿.'},
+    {lat:13.9552362, lng:99.5270323, t:'10:00', n_tr:'Giant Raintree (Monkey Pod)', n_en:'Giant Raintree (Monkey Pod)', d_tr:'Devasa yağmur ağacı. Ücretsiz, yerel tezgâhlar.', d_en:'Giant rain tree. Free, local stalls.'},
+    {lat:13.953917, lng:99.6051342, t:'10:45', n_tr:'Wat Tham Suea (Tiger Cave)', n_en:'Wat Tham Suea (Tiger Cave)', d_tr:'Tepe tapınağı, altın Buda, panoramik pirinç tarlası manzarası.', d_en:'Hilltop temple, golden Buddha, panoramic rice field views.'},
+    {lat:13.9772737, lng:99.6545001, t:'12:00', n_tr:'Kaew Hediyelik', n_en:'Kaew Souvenir', d_tr:'Yerel tatlılar + hediyelik eşya. Kanchanaburi\'den dönüşte de durulabilir.', d_en:'Local sweets + souvenirs. Can also stop on the way back.'},
+    {lat:14.031636, lng:99.5255602, t:'13:00', n_tr:'War Cemetery (Don Rak)', n_en:'War Cemetery (Don Rak)', d_tr:'6.982 savaş esiri mezarı. Ücretsiz, derin atmosfer.', d_en:'6,982 POW graves. Free, deeply moving.'},
+    {lat:14.032244, lng:99.5248622, t:'13:45', n_tr:'Death Railway Museum', n_en:'Death Railway Museum', d_tr:'Ölüm Demiryolu\'nun hikâyesi. 170 ฿, kahve dahil.', d_en:'Story of the Death Railway. 170 ฿, drink included.'},
+    {lat:14.0417794, lng:99.5041813, t:'15:30', n_tr:'Kwai Köprüsü', n_en:'Bridge over River Kwai', d_tr:'Tarihî köprü, üzerinde yürü, tren geçişini izle. Ücretsiz.', d_en:'Historic bridge, walk across, watch trains. Free.'},
+    {lat:14.0424513, lng:99.5031533, t:'16:00', n_tr:'Keere Tara Cafe', n_en:'Keere Tara Cafe', d_tr:'Köprü manzarasıyla nehir kıyısı yemek. Gün batımı.', d_en:'Riverside dining with bridge view. Sunset.'},
+    {lat:14.0211276, lng:99.5271749, t:'17:00', n_tr:'Skywalk', n_en:'Skywalk', d_tr:'Cam yürüyüş yolu, 3 nehrin buluşması. 60 ฿.', d_en:'Glass walkway, 3-river confluence. 60 ฿.'},
+    {lat:14.1045316, lng:99.1671333, t:'—', n_tr:'Tham Krasae Köprüsü (2. gün)', n_en:'Tham Krasae Bridge (day 2)', d_tr:'Kayalığa yapışmış ahşap demiryolu. Trenle gel. 100 ฿.', d_en:'Wooden railway clinging to cliff. Come by train. 100 ฿.'},
+    {lat:14.238718, lng:99.058304, t:'—', n_tr:'Sai Yok Noi Şelalesi (2. gün)', n_en:'Sai Yok Noi Waterfall (day 2)', d_tr:'Kolay erişimli şelale, yüzülebilir. Trenle de gelebilirsin.', d_en:'Easy-access waterfall, swimming. Can come by train too.'},
+    {lat:14.3754962, lng:99.1439623, t:'—', n_tr:'Erawan Milli Parkı (2. gün)', n_en:'Erawan National Park (day 2)', d_tr:'7 katlı şelale, turkuaz havuzlar. 300 ฿. Tam gün ayır.', d_en:'7-tiered waterfall, turquoise pools. 300 ฿. Allow a full day.'},
+    {lat:14.404911, lng:99.1280098, t:'—', n_tr:'Srinagarind Barajı (2. gün)', n_en:'Srinagarind Dam (day 2)', d_tr:'Erawan yakınında göl + baraj manzarası.', d_en:'Lake + dam views near Erawan.'}
+  ]
+}
+];
+let CUR_ROUTE = 0;
+let MAP=null, MAP_BUILT=false;
+
+
+
+const DATA = [
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Grand Palace', name_en:'Grand Palace', thai:'พระบรมมหาราชวัง',
+    desc_tr:'Rama I\'in 1782\'de yaptırdığı surlu saray kompleksi (yapımı 1784\'te tamamlandı); 130 yıl boyunca kraliyet ailesi ve Siam hükümetinin eviydi. 1932 devriminden sonra yalnızca özel günlere ayrıldı, birkaç yıl sonra halka açıldı. Tarihî not: saray inşa edilmeden önce bölgedeki Çinli topluluk Sampheng\'e taşındı — bugünkü Chinatown böyle doğdu.',
+    desc_en:'Walled palace complex built by Rama I in 1782 (completed 1784); home to the royal family and Siamese government for 130 years. After the 1932 revolution it was reserved for special occasions, then opened to the public. History note: before construction, the Chinese community here was moved to Sampheng — that became today\'s Chinatown.',
+    price:'500 ฿ (Wat Phra Kaew + Queen Sirikit Tekstil Müzesi dahil)',
+    hours:'08:30–16:30, son giriş/bilet 15:30',
+    getthere:'MRT Sanam Chai (≈15 dk yürüme) · Chao Phraya tekne Tha Chang/Tha Tien',
+    tip_tr:'Sabah açılışta git (kalabalık+sıcak). Sahte "burası kapalı" rehberlerine dikkat. Sadece nakit. Audio guide 200 ฿.',
+    tip_en:'Go at opening (crowds + heat). Beware "it\'s closed" scam guides. Cash only. Audio guide 200 ฿.',
+    keys:'grand palace saray kral king royal emerald zümrüt rama palace büyük'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Phra Kaew (Zümrüt Buda)', name_en:'Wat Phra Kaew (Emerald Buddha)', thai:'วัดพระแก้ว',
+    desc_tr:'Krallığın en kutsal tapınağı, Grand Palace içinde. Tek parça yeşil jasperden 26 inçlik Zümrüt Buda. Duvarlarda Ramakien destanından canlı duvar resimleri.',
+    desc_en:'The kingdom\'s most sacred temple, inside the Grand Palace. 26-inch Emerald Buddha carved from a single piece of green jasper. Murals depict the Ramakien epic.',
+    price:'Grand Palace bileti içinde (500 ฿)',
+    hours:'Grand Palace ile aynı (08:30–16:30)',
+    getthere:'MRT Sanam Chai · Tha Chang iskelesi',
+    tip_tr:'Grand Palace ile aynı ziyarette gör; ayrı sıra/giriş yok.',
+    tip_en:'See it on the same visit as the Grand Palace.',
+    keys:'wat phra kaew emerald zümrüt buddha buda kutsal sacred ramakien jasper'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Pho (Yatan Buda)', name_en:'Wat Pho (Reclining Buddha)', thai:'วัดโพธิ์',
+    desc_tr:'Şehrin en büyük ve en eski tapınağı. Altın kaplı 46 m / 150 ft yatan Buda; ayak tabanlarında sedef kakmalı 108 uğurlu işaret. Ünlü geleneksel Tay masaj okulu burada.',
+    desc_en:'The city\'s largest, oldest wat. Gold-covered 46 m reclining Buddha; 108 auspicious signs inlaid in mother-of-pearl on the feet. Home to the famous Thai massage school.',
+    price:'300 ฿ (şişe su dahil)',
+    hours:'08:00–18:30 (masaj ≈18:00\'e dek)',
+    getthere:'Grand Palace\'ın ~700 m güneyi · MRT Sanam Chai · Tha Tien iskelesi',
+    tip_tr:'Bir saatlik Tay masajı ≈400 ฿, randevu gerekmez. Çorap getir (içeride ayakkabı çıkar).',
+    tip_en:'1-hour Thai massage ≈400 ฿, no appointment needed. Bring socks (shoes off inside).',
+    keys:'wat pho reclining yatan buddha buda masaj massage en büyük oldest largest temple'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Arun (Şafak Tapınağı)', name_en:'Wat Arun (Temple of Dawn)', thai:'วัดอรุณ',
+    desc_tr:'Nehrin Thonburi yakasında, 82 m porselen kaplı prang (Khmer kulesi). Gün batımında nehirden bakınca ambere döner — Bangkok\'un en güzel akşam manzaralarından.',
+    desc_en:'On the Thonburi bank, an 82 m porcelain-clad prang. At dusk from the river it turns amber — one of Bangkok\'s loveliest evening sights.',
+    price:'200 ฿ (ana prang ve iç alanlar)',
+    hours:'08:00–18:00, son giriş 17:30',
+    getthere:'Tha Tien iskelesinden karşı-kıyı feribotu (~15 ฿)',
+    tip_tr:'Gün batımına denk getir. İçeri akşam girilemez ama nehrin karşısından ışıklı hali en güzeli.',
+    tip_en:'Time it for sunset. No evening entry inside, but lit-up from across the river is the best view.',
+    keys:'wat arun dawn şafak temple sunset gün batımı prang thonburi nehir river porselen'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Saket (Altın Tepe)', name_en:'Wat Saket (Golden Mount)', thai:'วัดสระเกศ',
+    desc_tr:'Altın stupasıyla bir zamanlar şehrin en yüksek noktası. Aslında Rama I döneminde inşa edilen yapay bir tepe; birkaç kez çöktü ve ancak ~1870\'te Rama V döneminde tamamlandı (tepedeki altın chedi "Phu Khao Thong"). Tepeye 318 basamakla çıkılır. Kasım\'da Loi Krathong fuarı.',
+    desc_en:'Gold stupa, once the city\'s highest point. Actually an artificial hill begun under Rama I; it collapsed a few times and was only finished ~1870 under Rama V (the gold chedi atop is "Phu Khao Thong"). 318 steps to the top. Loi Krathong fair in November.',
+    price:'100 ฿ (zirve tırmanışı)',
+    hours:'≈08:00–18:00',
+    getthere:'MRT Sam Yot, sonra taksi',
+    tip_tr:'Sıcak öğleden sonra 318 basamağı tırmanma; sabah ya da akşamüstü ideal.',
+    tip_en:'Don\'t climb the 318 steps in the hot afternoon; morning or late afternoon is best.',
+    keys:'wat saket golden mount altın tepe stupa basamak view manzara loi krathong'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Suthat', name_en:'Wat Suthat', thai:'วัดสุทัศน์',
+    desc_tr:'Rama I–III döneminde yapılan kraliyet tapınağı. Tayland\'ın ayakta kalan en büyük Sukhothai dönemi bronz Buda\'sı ve yoğun renkli mitoloji duvar resimleri. Rama VIII\'in külleri Buda\'nın kaidesinde.',
+    desc_en:'Royal temple from the reigns of Rama I–III. Thailand\'s largest surviving Sukhothai-era bronze Buddha and vivid mythological murals. Rama VIII\'s ashes are in the Buddha\'s base.',
+    price:'Genellikle ücretsiz / düşük',
+    hours:'≈08:00–18:00',
+    getthere:'MRT Sam Yot, sonra yürüme',
+    tip_tr:'Hemen önündeki dev Kızıl Salıncak (Giant Swing) ile birlikte gör.',
+    tip_en:'Pair it with the Giant Swing right in front.',
+    keys:'wat suthat sukhothai bronze buddha mural giant swing kızıl salıncak royal'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Traimit (Altın Buda)', name_en:'Wat Traimit (Golden Buddha)', thai:'วัดไตรมิตร',
+    desc_tr:'Chinatown\'da; dünyanın en büyük som altın Buda\'sı (5,5 ton, 3 m, ~9 yüzyıl önce Sukhothai stilinde). Yüzyıllarca sıvayla kaplı kaldığı için fark edilmemiş, 1950\'lerde taşınırken ortaya çıkmış.',
+    desc_en:'In Chinatown; the world\'s largest solid-gold Buddha (5.5 tons, 3 m, cast ~9 centuries ago in Sukhothai style). Hidden under plaster for centuries, revealed during a 1950s move.',
+    price:'40 ฿ heykel · 100 ฿ müze',
+    hours:'≈08:00–17:00',
+    getthere:'MRT Hua Lamphong',
+    tip_tr:'Chinatown gezisiyle birleştir; yanındaki Tay-Çin tarih müzesi de güzel.',
+    tip_en:'Combine with Chinatown; the Thai-Chinese history museum beside it is worth it.',
+    keys:'wat traimit golden buddha altın buda chinatown som altın solid gold sukhothai'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'National Museum', name_en:'National Museum', thai:'พิพิธภัณฑสถานแห่งชาติ',
+    desc_tr:'Tay tarihiyle tanışmak için en iyi yer; dünyanın en iyi Güneydoğu Asya sanat koleksiyonlarından biri. Ban Chiang seramik ve bronzlarıyla (MÖ 2000–900) başlar.',
+    desc_en:'The best place to acquaint yourself with Thai history; one of the world\'s best collections of Southeast Asian art. Begins with Ban Chiang ceramics & bronze (2000–900 BC).',
+    price:'200 ฿',
+    hours:'Pzt & Sal kapalı',
+    getthere:'Eski Şehir, Na Phra That Rd · MRT Sanam Chai',
+    tip_tr:'Çarşamba & Perşembe ~09:30\'da ücretsiz İngilizce rehberli tur var.',
+    tip_en:'Free English guided tours Wed & Thu, usually 09:30.',
+    keys:'national museum müze tarih history thai art sanat ban chiang rehberli tur'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Jim Thompson House', name_en:'Jim Thompson House', thai:'บ้านจิม ทอมป์สัน',
+    desc_tr:'İpek Kralı diye bilinen, 1967\'de Malezya ormanında esrarengiz şekilde kaybolan Amerikalı Jim Thompson\'ın evi. Ayutthaya\'dan taşınmış 6 geleneksel tik ahşap ev + Asya sanat koleksiyonu.',
+    desc_en:'Home of the "Silk King," American Jim Thompson, who vanished in the Malaysian jungle in 1967. Six traditional teak houses moved from Ayutthaya + Asian art collection.',
+    price:'250 ฿ (rehberli tur dahil, 10–21 yaş 150 ฿)',
+    hours:'10:00–17:00, son tur 17:00',
+    getthere:'BTS National Stadium (~5 dk) · kanal teknesi Ban Krua Nua',
+    tip_tr:'Bileti SADECE gişeden al — online satış yok, sahtekarlara dikkat. Eve sadece rehberli turla girilir.',
+    tip_en:'Buy tickets ONLY at the gate — no online sales, beware scammers. House entry by guided tour only.',
+    keys:'jim thompson house ipek silk king müze museum teak ahşap silk thai art kanal'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Queen Sirikit Tekstil Müzesi', name_en:'Queen Sirikit Museum of Textiles', thai:'',
+    desc_tr:'Grand Palace içinde, eski Maliye Bakanlığı binasında. Tay ipeğinin hikâyesini kraliçenin en ünlü kıyafetleriyle anlatır. Günlük ipek dokuma gösterileri ve iyi bir hediye dükkânı.',
+    desc_en:'Inside the Grand Palace, in the old Ministry of Finance. Tells the story of Thai silk via the queen\'s most celebrated outfits. Daily silk-making demos and a good gift shop.',
+    price:'Grand Palace bileti içinde, ya da tek başına 150 ฿',
+    hours:'Grand Palace ile aynı',
+    getthere:'MRT Sanam Chai (Grand Palace içi)',
+    tip_tr:'Grand Palace gezerken uğra, ayrı yol gerektirmez.',
+    tip_en:'Drop in while at the Grand Palace; no extra trip needed.',
+    keys:'queen sirikit textile tekstil ipek silk museum müze grand palace'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'National Gallery', name_en:'National Gallery', thai:'',
+    desc_tr:'National Museum kadar dikkat çekmese de modern ve geleneksel Tay sanatının kalıcı koleksiyonu burada. Eski kraliyet darphane binasında; ülkeden ve dışarıdan geçici sergiler de oluyor.',
+    desc_en:'Less famous than the National Museum but holds a permanent collection of modern & traditional Thai art. In the former royal mint; frequent temporary shows.',
+    price:'200 ฿',
+    hours:'Pzt & Sal kapalı',
+    getthere:'4 Chao Fa Rd, Phra Nakhon (Eski Şehir)',
+    tip_tr:'National Museum/National Theater yakınında; ikisini aynı güne koyabilirsin.',
+    tip_en:'Near the National Museum/Theater; pair them on the same day.',
+    keys:'national gallery galeri sanat art modern thai mint darphane sergi'
+  },
+  {
+    type:'market', cat:['market'],
+    name_tr:'Chatuchak Hafta Sonu Çarşısı', name_en:'Chatuchak Weekend Market', thai:'ตลาดนัดจตุจักร',
+    desc_tr:'Dünyanın en büyük açık hava pazarlarından biri — 8.000–15.000 tezgâh, 27–30 bölüm: kıyafet, antika, el sanatları, bitki, sanat, yemek. Her hafta sonu ~200.000 ziyaretçi.',
+    desc_en:'One of the world\'s largest open-air markets — 8,000–15,000 stalls across 27–30 sections: clothes, antiques, crafts, plants, art, food. ~200,000 visitors each weekend.',
+    price:'Giriş ücretsiz',
+    hours:'Cmt & Paz 09:00–18:00 (Cuma gece toptan; Çar–Per bitki bölümü)',
+    getthere:'BTS Mo Chit (Çıkış 1, ~5 dk) · MRT Chatuchak Park / Kamphaeng Phet',
+    tip_tr:'Sabah erken (10:30 öncesi) git — daha serin ve sakin. Su iç, gölgede dinlen. Pazarlık yap.',
+    tip_en:'Go early (before 10:30) — cooler and calmer. Hydrate, rest in shade. Haggle.',
+    keys:'chatuchak jj market çarşı pazar weekend hafta sonu shopping alışveriş mo chit antika'
+  },
+  {
+    type:'market', cat:['market','area'],
+    name_tr:'Khao San Road', name_en:'Khao San Road', thai:'ถนนข้าวสาร',
+    desc_tr:'Banglamphu\'da ünlü sırt çantalı turist merkezi. Eskiden pirinç satıcıları varmış (adı "öğütülmüş pirinç" demek). Gece çılgın bir pazara dönüşür; Tay Yeni Yılı\'nda (nisan ortası) dev su savaşı olur.',
+    desc_en:'Famous backpacker hub in Banglamphu. Once rice vendors (the name means "milled rice"). Becomes a frenetic night market; a huge water fight at Thai New Year (mid-April).',
+    price:'—',
+    hours:'Gece canlanır',
+    getthere:'Phra Athit iskelesi · Eski Şehir\'in kuzeyi',
+    tip_tr:'Gündüz sakin, gece hareketli. Yakındaki Phra Athit Rd ve Santichaiprakarn Park nehir kenarında hoş bir yürüyüş.',
+    tip_en:'Quiet by day, lively by night. Nearby Phra Athit Rd & Santichaiprakarn Park make a nice riverside walk.',
+    keys:'khao san road backpacker sırt çantalı banglamphu gece night bar su savaşı songkran'
+  },
+  {
+    type:'market', cat:['market','area'],
+    name_tr:'Chinatown (Yaowarat)', name_en:'Chinatown (Yaowarat)', thai:'เยาวราช',
+    desc_tr:'Eski Şehir\'in doğusunda labirent gibi mahalle. Yaowarat Rd altın dükkânları ve mükemmel restoranlarla dolu. Açık pazarlar ve sokak yemekleri Bangkok\'un en canlılarından. Yanında Hint kumaş çarşısı Phahurat.',
+    desc_en:'Labyrinthine district east of the Old City. Yaowarat Rd is packed with gold shops and excellent restaurants. Among Bangkok\'s most vibrant street-food scenes. Indian fabric market Phahurat nearby.',
+    price:'—',
+    hours:'Akşam sokak yemeği zirvede',
+    getthere:'MRT Sam Yot / Hua Lamphong',
+    tip_tr:'Akşam git, sokak yemeğine bırak kendini. Wat Traimit (Altın Buda) hemen kenarında.',
+    tip_en:'Go in the evening, surrender to the street food. Wat Traimit (Golden Buddha) is right here.',
+    keys:'chinatown yaowarat çin sokak yemeği street food gold altın phahurat hint market'
+  },
+  {
+    type:'market', cat:['market'],
+    name_tr:'Çiçek Pazarı & Khlong Toey', name_en:'Flower Market & Khlong Toey', thai:'ปากคลองตลาด',
+    desc_tr:'Pak Khlong Talat çiçek pazarı (Banglamphu yakını) renk ve koku cümbüşü. Khlong Toey ise dünyanın en büyük taze gıda pazarlarından biri — yemek turlarının başlangıç noktası.',
+    desc_en:'Pak Khlong Talat flower market (near Banglamphu) bursts with colour & scent. Khlong Toey is one of the world\'s largest fresh-produce markets — a starting point for food tours.',
+    price:'Giriş ücretsiz',
+    hours:'Çiçek pazarı büyük ölçüde 24 saat',
+    getthere:'Çiçek pazarı: Eski Şehir nehir kıyısı · Khlong Toey: MRT Queen Sirikit',
+    tip_tr:'Çiçek pazarı gece geç/sabah erken en canlı haliyle görülür.',
+    tip_en:'The flower market is most alive late night / early morning.',
+    keys:'flower market çiçek pazarı pak khlong khlong toey fresh produce taze gıda food tour'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Lumpini Park', name_en:'Lumpini Park', thai:'สวนลุมพินี',
+    desc_tr:'Tayland\'ın ilk halka açık parkı. 1925\'te açıldı; başta Rama VI\'nın özel bahçesi "Saladaeng Tarlası"ydı. Kral, tahta çıkışının 15. yılı için buraya uluslararası bir ticaret fuarı (Siam Rath Museum) planlamış ama 1925\'te ölünce fuar olmamış, tarla parka dönüşmüş. İçinde serbest dolaşan dev varan kertenkeleleri (monitor lizard), kediler, göl ve pedalo (saatlik ~40 ฿). Londra\'nın Hyde Park\'ı, New York\'un Central Park\'ı varsa Bangkok\'un Lumpini\'si var.',
+    desc_en:'Thailand\'s first public park. Opened in 1925; originally Rama VI\'s private garden "Saladaeng Field." The king planned an international trade fair (Siam Rath Museum) here for his 15th accession anniversary, but he died in 1925 so it never happened and the field became a park. Free-roaming monitor lizards, cats, a lake and pedalos (~40 ฿/hr). If London has Hyde Park and New York Central Park, Bangkok has Lumpini.',
+    price:'Ücretsiz (pedalo ~40 ฿/saat)',
+    hours:'04:30–22:00',
+    getthere:'MRT Lumphini veya Si Lom · BTS Sala Daeng · Gate 1 (Wireless Rd) ana kapılardan daha sakin',
+    tip_tr:'Varan kertenkeleler insana zararsız — köşeye sıkıştırma yeter. Sabah erken (10:00 öncesi) ve akşamüstü (16:00 sonrası) en serin ve keyifli. Ana kapı Saladaeng kavşağında, köşede Rama VI heykeli.',
+    tip_en:'Monitor lizards are harmless — just don\'t corner one. Early morning (before 10:00) and late afternoon (after 16:00) are coolest. Main gate at Saladaeng intersection, with the Rama VI statue on the corner.',
+    keys:'lumpini lumphini park yeşil green silom sathorn yürüyüş koşu run 1925 rama 6 monitor lizard varan kertenkele kedi göl pedalo hyde central park ilk park'
+  },
+  {
+    type:'tip', cat:['tip'],
+    name_tr:'Ulaşım: nasıl gezilir', name_en:'Getting around', thai:'',
+    desc_tr:'Trafik berbat — araba kullanma. BTS Skytrain + MRT metro hızlı ve klimalı. Chao Phraya Express Boat nehir boyunca trafiği atlatır. Taksilerde taksimetreyi açtır; tuk-tuk\'ta önce pazarlık.',
+    desc_en:'Traffic is terrible — don\'t drive. BTS Skytrain + MRT are fast and air-conditioned. The Chao Phraya Express Boat bypasses traffic along the river. Insist on the taxi meter; haggle tuk-tuks first.',
+    price:'BTS/MRT jeton gişe veya makineden',
+    hours:'—',
+    getthere:'—',
+    tip_tr:'Eski Şehir tapınakları MRT\'ye uzak; Sanam Chai + yürüme ya da nehir teknesi en pratik.',
+    tip_en:'Old City temples are far from MRT; Sanam Chai + walk or the river boat is most practical.',
+    keys:'ulaşım transport bts skytrain mrt metro taksi taxi tuk tuk tekne boat chao phraya nasıl gezilir trafik'
+  },
+  {
+    type:'tip', cat:['tip'],
+    name_tr:'Kıyafet & tapınak görgüsü', name_en:'Dress code & temple etiquette', thai:'',
+    desc_tr:'Tapınaklarda omuz ve diz kapalı olmalı; şort, terlik, açık omuz/göbek yasak. Grand Palace\'ta unutursan depozitoyla kıyafet kiralanır (~200 ฿). İçeri girerken ayakkabı çıkarılır.',
+    desc_en:'Cover shoulders and knees at temples; no shorts, flip-flops, bare shoulders/midriff. Grand Palace loans cover-ups for a deposit (~200 ฿). Remove shoes inside.',
+    price:'—',
+    hours:'—',
+    getthere:'—',
+    tip_tr:'Yanında ince bir şal ve kolay çıkan ayakkabı/çorap taşı — hem pratik hem saygılı.',
+    tip_en:'Carry a light scarf and easy-off shoes/socks — practical and respectful.',
+    keys:'kıyafet dress code tapınak temple görgü etiket omuz diz şort terlik ayakkabı çorap'
+  },
+  {
+    type:'tip', cat:['tip'],
+    name_tr:'Sahtekarlık & güvenlik', name_en:'Scams & safety', thai:'',
+    desc_tr:'Grand Palace, Wat Pho ve Khao San çevresinde sahte rehberlere dikkat: "burası kapalı" deyip seni değerli taş dükkânına götürürler. Çok ucuz "turlar" şüphelidir. Çıkışta bekleyen taksiciler de kazıklayabilir.',
+    desc_en:'Beware fake guides around the Grand Palace, Wat Pho, and Khao San: they say "it\'s closed" and steer you to a gem shop. Too-cheap "tours" are suspect. Taxi drivers waiting at exits may overcharge.',
+    price:'—',
+    hours:'—',
+    getthere:'—',
+    tip_tr:'Açılış saatlerini resmi kaynaktan doğrula; "kapalı" diyene inanma. Nakit baht bulundur.',
+    tip_en:'Verify hours from official sources; ignore "it\'s closed." Keep cash baht handy.',
+    keys:'sahtekarlık scam dolandırıcı güvenlik safety fake guide rehber gem taş taksi'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Ratchadamnoen Caddesi (Royal Avenue)', name_en:'Ratchadamnoen Avenue (Royal Avenue)', thai:'ถนนราชดำเนิน',
+    desc_tr:'Bangkok\'un en ünlü ve tarihî caddesi. Grand Palace\'tan başlayıp ~4 km kuzeye, Dusit Sarayı\'na (Anantasamakhom Taht Salonu) uzanır. Üç bölüm: iç (~250 m), orta (en tanınan kısım, Demokrasi Anıtı), dış. Kral 1897 Avrupa turunda Paris\'i görünce Champs-Élysées\'den ilhamla yaptırmış. Orta bölüm 1940\'lar art deco binalarıyla dolu.',
+    desc_en:'Bangkok\'s most famous, historic avenue. Runs from the Grand Palace ~4 km north to Dusit Palace (Anantasamakhom Throne Hall). Three sections: inner (~250 m), middle (best-known, Democracy Monument), outer. Inspired by the Champs-Élysées after the king\'s 1897 European tour. The middle section is lined with 1940s art deco buildings.',
+    price:'Ücretsiz (cadde)',
+    hours:'—',
+    getthere:'En keyifli giriş: kanal teknesi (Saen Saeb) ~14–16 ฿, Old Town\'a 10–20 dk',
+    tip_tr:'Eski şehri ilk kez geziyorsan orta bölümden, Demokrasi Anıtı civarından başla. Pazar öğleden sonra trafik azken yürüyüş çok keyifli.',
+    tip_en:'First time in the old city? Start in the middle section near Democracy Monument. A Sunday afternoon stroll is lovely when traffic is light.',
+    keys:'ratchadamnoen royal avenue cadde rajadamnern champs elysees demokrasi 1897 rama 5 dusit grand palace orta bölüm'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Demokrasi Anıtı', name_en:'Democracy Monument', thai:'อนุสาวรีย์ประชาธิปไตย',
+    desc_tr:'1932 devrimini (mutlak monarşinin sona erip anayasal monarşiye geçiş) anmak için yapılan anıt. Tay mimar Mew Aphaiwong tasarladı; kaidedeki kabartmalar Silpakorn Üniversitesi\'nin kurucusu efsanevi heykeltıraş Corrado Feroci (Prof. Silpa Bhirasri) imzalı. Ratchadamnoen\'in orta bölümünün simgesi.',
+    desc_en:'Monument commemorating the 1932 revolution (end of absolute monarchy, shift to constitutional monarchy). Designed by Thai architect Mew Aphaiwong; the base reliefs are by legendary sculptor Corrado Feroci (Prof. Silpa Bhirasri), founder of Silpakorn University. The icon of Ratchadamnoen\'s middle section.',
+    price:'Ücretsiz (dışarıdan)',
+    hours:'—',
+    getthere:'Ratchadamnoen Klang Rd · MRT Sam Yot + yürüme/taksi',
+    tip_tr:'Tayland\'ın demokrasi mücadelesinin sembolü kabul edilir; 90 yıldır kutlama ve protestolara sahne olmuştur.',
+    tip_en:'Considered the symbol of Thailand\'s democratic struggle; site of celebrations and protests for 90 years.',
+    keys:'demokrasi democracy monument anıt 1932 devrim revolution feroci silpa bhirasri silpakorn ratchadamnoen'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Sanam Luang', name_en:'Sanam Luang', thai:'สนามหลวง',
+    desc_tr:'Grand Palace\'ın hemen yanındaki büyük kraliyet meydanı ("kraliyet çimi"). 1784\'ten kalma; ilk yüzyıl kraliyet törenleri, dini festivaller ve kraliyet ailesi cenazeleri için kullanıldı, bir kısmında pirinç yetiştirildi. 1897\'de Rama V halka açtı. Bangkok\'un ilk hafta sonu pazarı buradaydı — 1982\'de Chatuchak\'a taşındı.',
+    desc_en:'Large royal field ("royal turf") right beside the Grand Palace. Dates to 1784; for its first century used for royal ceremonies, religious festivals and royal cremations, with part growing rice. Rama V opened it to the public in 1897. Bangkok\'s original weekend market was here — it moved to Chatuchak in 1982.',
+    price:'Ücretsiz',
+    hours:'Gündüz',
+    getthere:'Grand Palace bitişiği · MRT Sanam Chai',
+    tip_tr:'Karşısında National Museum, National Theatre ve Thammasat Üniversitesi var; kampüse girip sergilere bakabilirsin.',
+    tip_en:'Across from it: National Museum, National Theatre and Thammasat University; you can walk into the campus and see exhibitions.',
+    keys:'sanam luang royal field meydan kraliyet 1784 rama 5 weekend market chatuchak grand palace thammasat'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'King Prajadhipok Müzesi (Rama VII)', name_en:'King Prajadhipok Museum (Rama VII)', thai:'พิพิธภัณฑ์พระบาทสมเด็จพระปกเกล้าฯ',
+    desc_tr:'Lan Luang Rd köşesinde; Tayland\'ın son mutlak hükümdarı Rama VII\'nin hayatını anlatır. Bina 1906\'da John Sampson adlı İngiliz department store olarak açıldı (ayakkabı, eyer, dikilmiş takım satardı). İsviçreli-Fransız mimar Charles Béguelin tasarladı. 2001\'de müze oldu.',
+    desc_en:'On the corner of Lan Luang Rd; recounts the life of Rama VII, Thailand\'s last absolute monarch. The building opened in 1906 as the John Sampson British department store (shoes, saddles, tailored suits). Designed by Swiss-French architect Charles Béguelin. Became a museum in 2001.',
+    price:'—',
+    hours:'—',
+    getthere:'Lan Luang Rd köşesi, Ratchadamnoen yakını',
+    tip_tr:'Mutlak monarşinin sonunu anlamak için çok değerli bir durak.',
+    tip_en:'A valuable stop for understanding the end of the absolute monarchy.',
+    keys:'prajadhipok rama 7 müze museum john sampson department store beguelin son hükümdar absolute monarch'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Fort Mahakan Park & Eski Sur', name_en:'Fort Mahakan Park & Old City Wall', thai:'ป้อมมหากาฬ',
+    desc_tr:'Eski şehrin (Rattanakosin Adası) ayakta kalan iki sur parçasından biri burada. 1782\'de şehir kurulduğunda ada etrafına 15 kapılı bir sur örülmüş, her kapıda bir kale varmış (15. kapı cesetleri taşıdığı için kalesiz "hayalet kapı"ydı). Bugün yalnızca 2 sur parçası ve 2 kale kaldı; biri burada, diğeri (Phra Sumen) nehir kıyısında Khao San yakınında.',
+    desc_en:'One of the two surviving stretches of the old city (Rattanakosin Island) wall. When the city was founded in 1782, a wall with 15 gates ringed the island, each with a fort (the 15th was the gateless "ghost gate" for carrying out the dead). Only 2 wall sections and 2 forts remain; one here, the other (Phra Sumen) by the river near Khao San.',
+    price:'Ücretsiz',
+    hours:'Gündüz',
+    getthere:'Golden Mount (Wat Saket) yakını, eski şehir hendeği kenarı',
+    tip_tr:'Yürüyüş rotaları üzerinde küçük, tarihî bir mola; iki ünlü kedisiyle de bilinir.',
+    tip_en:'A small, historic stop on walking routes; also known for its two resident cats.',
+    keys:'fort mahakan park sur city wall rattanakosin 1782 15 kapı gate ghost gate phra sumen kale'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Rattanakosin Adası (Eski Şehir)', name_en:'Rattanakosin Island (Old City)', thai:'เกาะรัตนโกสินทร์',
+    desc_tr:'"Eski şehir / old town / Phra Nakhon" diye geçen bölge aslında budur. Gerçek bir nehir adası değil; bir yanında Chao Phraya Nehri, diğer yanında eski şehir hendeği (Khlong Bang Lamphu + Khlong Ong Ang) olduğu için suyla çevrili. Bangkok\'un tarihî kalbi — Grand Palace, Wat Pho, büyük tapınaklar burada.',
+    desc_en:'This is what people mean by "old town / Phra Nakhon." Not a real river island; it\'s surrounded by water — the Chao Phraya River on one side and the old city moat (Khlong Bang Lamphu + Khlong Ong Ang) on the other. Bangkok\'s historic heart — Grand Palace, Wat Pho and the major temples are here.',
+    price:'—',
+    hours:'—',
+    getthere:'MRT Sanam Chai · Chao Phraya tekneleri (Tha Tien, Tha Chang)',
+    tip_tr:'Haritada "old town, old city, Phra Nakhon, Rattanakosin" hep aynı yeri tarif eder — kafan karışmasın.',
+    tip_en:'On maps "old town, old city, Phra Nakhon, Rattanakosin" all describe the same place — don\'t get confused.',
+    keys:'rattanakosin island ada old town eski şehir phra nakhon moat hendek chao phraya tarihi kalp'
+  },
+  {
+    type:'tip', cat:['tip'],
+    name_tr:'Tarih notu: Demokrasi mücadelesi', name_en:'History note: the democracy struggle', thai:'',
+    desc_tr:'Ratchadamnoen Caddesi modern Tay tarihinin birçok dönüm noktasına sahne oldu. 14 Ekim 1973: yüz binlerce kişinin askeri hükümete karşı öğrenci ayaklanması; ordu müdahale etti, çok sayıda ölü oldu, sonradan bir anıt dikildi. 6 Ekim 1976: Thammasat Üniversitesi\'nde (Sanam Luang karşısı) öğrencilerin öldürüldüğü katliam. Mayıs 1992 ("Kara Mayıs"): Sujinda hükümetine karşı ayaklanma kanlı bastırıldı; Kral Rama IX\'un araya girmesiyle son buldu.',
+    desc_en:'Ratchadamnoen Avenue witnessed many turning points of modern Thai history. 14 Oct 1973: a student uprising of hundreds of thousands against the military government; the army intervened, many died, a memorial was later built. 6 Oct 1976: a massacre of students at Thammasat University (across from Sanam Luang). May 1992 ("Black May"): the uprising against the Suchinda government was bloodily suppressed; it ended after King Rama IX intervened.',
+    price:'—',
+    hours:'—',
+    getthere:'—',
+    tip_tr:'Bu olaylar Demokrasi Anıtı ve çevresinin neden bu kadar anlamlı olduğunu açıklar; gezerken bağlamı bilmek deneyimi derinleştirir.',
+    tip_en:'These events explain why the Democracy Monument and its surroundings matter so much; knowing the context deepens the visit.',
+    keys:'tarih history 1973 1976 1992 black may kara mayıs ayaklanma uprising massacre katliam demokrasi thammasat democracy'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Kudi Chin Mahallesi & Santa Cruz Kilisesi', name_en:'Kudi Chin & Santa Cruz Church', thai:'กุฎีจีน',
+    desc_tr:'Thonburi yakasında, 1769\'a dayanan Portekiz yerleşimi. Kral Taksin, 1767\'de Ayutthaya\'nın düşüşünden sonra Siyamlılarla yan yana savaşan Portekizlilere bu toprağı bağışladı. Tay Budist, Mon, Çinli, Portekiz ve Tay Müslüman toplulukları yan yana yaşar. Santa Cruz Kilisesi: ilk ahşap kilise 1770\'te yapıldı, 1833 yangınında yok oldu; bugünkü hali 1916 onarımıyla.',
+    desc_en:'A Portuguese settlement on the Thonburi side dating to 1769. King Taksin gifted the land to the Portuguese, who fought alongside the Siamese after Ayutthaya fell in 1767. Thai Buddhist, Mon, Chinese, Portuguese and Thai Muslim communities live side by side. Santa Cruz Church: first wooden church 1770, destroyed in an 1833 fire; today\'s building dates to a 1916 renovation.',
+    price:'Kilise ücretsiz',
+    hours:'Kilise ≈05:00–10:00 & 17:00–19:00',
+    getthere:'Chao Phraya nehir kıyısı, Thonburi · kanal teknesi / feribot',
+    tip_tr:'Mahallede 5 kuşaktır aynı ailenin pişirdiği "khanom farang" keki (Portekiz-Tay füzyonu) mutlaka denenir. 200+ yıllık fırın.',
+    tip_en:'Try "khanom farang" cake (Portuguese-Thai fusion) baked by the same family for 5 generations. 200+ year-old bakery.',
+    keys:'kudi chin kudichin santa cruz church kilise portekiz portuguese thonburi taksin 1769 khanom farang kek mahalle'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Baan Kudichin Müzesi', name_en:'Baan Kudichin Museum', thai:'พิพิธภัณฑ์บ้านกุฎีจีน',
+    desc_tr:'Kudi Chin mahallesinde küçük ama zengin bir müze; Siam-Portekiz ilişkisini anlatır. İlk Portekizli elçi Duarte Fernandes 1511\'de geldi; 1518\'de Siam ile bir Avrupa ülkesi arasındaki ilk ticaret ve dostluk antlaşması imzalandı. Portekizlilerin Siam\'a getirdiği yiyecekler (biber, hatta tütün) ve baharat yolu haritası sergileniyor.',
+    desc_en:'A small but rich museum in Kudi Chin telling the Siam-Portugal story. The first Portuguese envoy Duarte Fernandes arrived in 1511; in 1518 the first treaty of commerce and friendship between Siam and a European nation was signed. Displays the spice route and foods the Portuguese introduced (chili, even tobacco).',
+    price:'Ücretsiz (bağış/kafe ile destek)',
+    hours:'10:00–17:30, Pazartesi kapalı',
+    getthere:'Santa Cruz Kilisesi\'nin hemen yanında, ara sokakta',
+    tip_tr:'Gerçek bir "gizli hazine"; alanın tarihiyle ilgileniyorsan kaçırma. Kafesi de hoş.',
+    tip_en:'A genuine hidden gem; don\'t miss it if you\'re into the area\'s history. Nice cafe too.',
+    keys:'baan kudichin museum müze portekiz portuguese siam fernandes 1511 1518 antlaşma spice baharat thonburi'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Paknam (Dev Buda)', name_en:'Wat Paknam (Big Buddha)', thai:'วัดปากน้ำภาษีเจริญ',
+    desc_tr:'Phasi Charoen\'de, kilometrelerce öteden görünen dev oturan Buda heykeliyle (66 m) ünlü. Tapınağın aslı 16. yüzyıla dayanır ("Cennet Bahçesi Tapınağı"); 1780\'de Kral Taksin yeniletip "kanalın ağzındaki tapınak" anlamına gelen Wat Paknam adını verdi. Dev Buda 2021\'de tamamlandı. İçindeki chedi\'nin üst katında çarpıcı zümrüt-yeşili cam stupa var.',
+    desc_en:'In Phasi Charoen, famous for its giant seated Buddha (66 m) visible for miles. The original temple dates to the 16th century ("Temple of the Heavenly Garden"); in 1780 King Taksin renovated it and renamed it Wat Paknam ("temple at the mouth of the canal"). The Big Buddha was completed in 2021. The top floor of the chedi holds a stunning emerald-green glass stupa.',
+    price:'Ücretsiz giriş',
+    hours:'06:00–20:00',
+    getthere:'MRT (Bang Phai yakını) · kanal teknesi · biraz gözden uzak',
+    tip_tr:'Üst kattaki cam stupa muhteşem. Chedi içinde, eski rahip ve bağışçılardan kalma eşyaların sergilendiği bir müze de var.',
+    tip_en:'The glass stupa on the top floor is stunning. The chedi also has a museum of items left by former monks and benefactors.',
+    keys:'wat paknam big buddha dev buda phasi charoen taksin 1780 cam stupa glass emerald yeşil chedi thonburi kanal'
+  },
+  {
+    type:'area', cat:['area','market'],
+    name_tr:'Artist\'s House (Khlong Bang Luang)', name_en:'Artist\'s House (Khlong Bang Luang)', thai:'บ้านศิลปิน',
+    desc_tr:'Khlong Bang Luang topluluğunda, 250+ yıllık ahşap bir ev. Eskiden nesiller boyu kuyumcu bir ailenindi; ~18 yıl önce satın alınıp sanatçılar için yaratıcı bir merkeze dönüştürüldü, 2009\'da halka açıldı. Bölge bir zamanlar Khlong Bang Luang yüzen pazarıydı (1970\'lerde söndü). Boncuk, çizim, boyama, oymacılık atölyeleri yapılıyor.',
+    desc_en:'A 250+ year-old wooden house in the Khlong Bang Luang community. Once owned by generations of goldsmiths; bought ~18 years ago and turned into a creative hub for artists, opened to the public in 2009. The area was once the Khlong Bang Luang floating market (faded by the 1970s). Beading, drawing, painting, carving workshops.',
+    price:'Atölyeler: malzeme ücretiyle',
+    hours:'10:00–18:00 (hafta sonu daha uzun)',
+    getthere:'Khlong Bang Luang, Thonburi · kanal teknesi',
+    tip_tr:'Sakinlik beklemeyin — kanaldan geçen tekneler gürültülü. Kanal kıyısında kahve içip atölyeye katılmak keyifli.',
+    tip_en:'Don\'t expect quiet — canal boats are noisy. Lovely to grab coffee canal-side and join a workshop.',
+    keys:'artist house baan silapin khlong bang luang sanatçı evi atölye workshop floating market yüzen pazar thonburi kuyumcu'
+  },
+  {
+    type:'tip', cat:['tip'],
+    name_tr:'Thonburi kanalları (genel)', name_en:'Thonburi canals (overview)', thai:'',
+    desc_tr:'Thonburi yakasında tarifeli toplu tekne yoktur, yalnızca özel/tur tekneleri (ör. Magical Trip gibi tur firmaları). Khlong Bangkok Yai ve Khlong Bangkok Noi aslında nehrin eski yatağıdır; 16. yüzyılda kral, junk gemileri ve Portekizli tüccarların yolunu kısaltmak için bu kanalı açtırmış. Kanal boyları eskiden topluluk hayatının kalbi olan yüzen pazarlarla doluydu.',
+    desc_en:'On the Thonburi side there\'s no scheduled public boat — only private/tour boats (e.g. operators like Magical Trip). Khlong Bangkok Yai and Khlong Bangkok Noi are actually the river\'s old course; in the 16th century the king had the canal cut to shorten the route for junk ships and Portuguese merchants. The canals were once lined with floating markets, the heartbeat of each community.',
+    price:'Özel/tur teknesi',
+    hours:'—',
+    getthere:'Kudi Chin / Wat Arun yakınından tur tekneleri',
+    tip_tr:'Tapınak + kanal + sanat + tarih + kediler bir arada güzel bir gün; tur teknesiyle Kudi Chin → Wat Paknam → Artist\'s House dizilebilir.',
+    tip_en:'Temples + canals + art + history + cats make a great day; by tour boat you can chain Kudi Chin → Wat Paknam → Artist\'s House.',
+    keys:'thonburi kanal canal khlong bangkok yai noi tekne boat tur magical trip yüzen pazar floating market portekiz'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Wireless Road & Sarasin Road', name_en:'Wireless Road & Sarasin Road', thai:'ถนนวิทยุ / ถนนสารสิน',
+    desc_tr:'Lumpini Park\'ın doğu ve kuzey kenarı. Wireless Road (Thanon Witthayu) 1920\'de açıldı; adını köşedeki 1913 tarihli Saladaeng telsiz kulesinden alır — Tayland\'ın ilk radyo yayını oradan yapıldı. Bugün büyükelçilikler (Avustralya, Japonya) ve One Bangkok mega-projesi (2026\'da tamamlanıyor, eski Suan Lum gece pazarı ve eski Lumpini boks stadının yerinde) burada. Sarasin Road parkın kuzey kenarında, lüks penthouse\'larıyla bilinir.',
+    desc_en:'The east and north edges of Lumpini Park. Wireless Road (Thanon Witthayu) opened in 1920; named after the 1913 Saladaeng radio tower on the corner — Thailand\'s first radio broadcast was made there. Today it has embassies (Australia, Japan) and the One Bangkok mega-project (completing 2026, on the site of the old Suan Lum night bazaar and old Lumpini boxing stadium). Sarasin Road runs along the park\'s north edge, known for luxury penthouses.',
+    price:'—',
+    hours:'—',
+    getthere:'MRT Lumphini (Wireless kavşağı) · Lumpini Gate 1',
+    tip_tr:'Eski Suan Lum gece pazarı (~2012\'de kapandı) burada bir beer garden ve konser salonuydu. Bölgenin geçmişi renkliydi; bugün hızla yenileniyor.',
+    tip_en:'The old Suan Lum night bazaar (closed ~2012) had a beer garden and music venue here. The area\'s past was colourful; today it\'s rapidly redeveloping.',
+    keys:'wireless road witthayu sarasin lumpini telsiz radio 1920 1913 one bangkok suan lum gece pazarı büyükelçilik embassy'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Talat Noi (Soi Wanit 2)', name_en:'Talat Noi (Soi Wanit 2)', thai:'ตลาดน้อย',
+    desc_tr:'Chinatown\'ın hemen güneyinde, nehir kıyısında eski bir Çinli-tüccar mahallesi. Daracık sokaklar, eski depolar, sokak sanatı, hipster kafeler ve tarihî evler iç içe. Soy Chak ("Kuyumcu Sokağı") boyunca eskiden altın tüccarları, dericiler ve atölyeler vardı. Geç 19. yüzyıl depolarından "SK" (Sang Kee Çinli deri üreticisi) binalarının çatısında James Bond "Tomorrow Never Dies" çekildi.',
+    desc_en:'An old Chinese-merchant quarter just south of Chinatown, on the river. Narrow lanes, old warehouses, street art, hipster cafes and historic houses mingle. Along Soi Chak ("Goldsmith\'s Lane") there were gold traders, leather makers and workshops. James Bond "Tomorrow Never Dies" was shot on the roofs of the late-19th-c "SK" (Sang Kee Chinese leather) warehouses.',
+    price:'Mahalle ücretsiz',
+    hours:'Gündüz · sokak yemeği Pzt/Çar/Cuma (bazen Paz)',
+    getthere:'Chao Phraya tekne: Ratchawong → Tha Din Daeng iskelesi (~4 ฿) · MRT Hua Lamphong',
+    tip_tr:'Sokak yemeği pazarı oturmalı değil, paket usulü — tabağını getir ya da yakın bir parkta ye. Tha Din Daeng mahallesi az turistli gerçek bir gizli köşe.',
+    tip_en:'The street-food market is takeaway, not sit-down — bring a plate or eat in a nearby park. Tha Din Daeng is a genuinely untouristy hidden corner.',
+    keys:'talat noi soy chak wanit 2 chinatown nehir river depo warehouse james bond sk sang kee deri leather sokak sanatı kafe tha din daeng altın'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'So Heng Tai Konağı', name_en:'So Heng Tai Mansion', thai:'บ้านโซวเฮงไถ่',
+    desc_tr:'Talat Noi\'da ~250 yıllık Çinli (Hokkien) tüccar konağı — Bangkok\'taki en eski Çin tarzı evlerden. Avlusunda ilginç bir dalış havuzu var (içinde tüplü dalış eğitimi verilir). Giriş ücreti içecek indirimine sayılıyor.',
+    desc_en:'A ~250-year-old Chinese (Hokkien) merchant mansion in Talat Noi — one of Bangkok\'s oldest Chinese-style houses. Its courtyard has a curious diving pool (scuba lessons given there). Entry fee counts toward a drink discount.',
+    price:'~50 ฿ (içecek indirimine sayılır)',
+    hours:'09:00–18:00, Pazartesi kapalı',
+    getthere:'Soi Wanit 2, Talat Noi',
+    tip_tr:'Klimasız, açık hava; sıcakta zor olabilir ama rustik fotoğraf için harika. Beklenti yüksek tutulmamalı, kısa bir durak.',
+    tip_en:'No A/C, open-air; can be tough in the heat but great for rustic photos. Keep expectations modest, a short stop.',
+    keys:'so heng tai konak mansion talat noi hokkien çin chinese eski ev dalış havuzu scuba avlu'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Lhong 1919', name_en:'Lhong 1919', thai:'ล้ง 1919',
+    desc_tr:'Nehrin Khlong San yakasında tarihî bir liman/han. 1850\'de Tay-Çinli iş insanı Phra Phisan Sombat tarafından açıldı; İngiliz Malaya, Çin ve Hong Kong\'dan gelen vapurlara hizmet verdi (adı Çince "buharlı gemi"den gelir). 1919\'da Wanglee ailesi devraldı, tarım işine liman yaptı; yanındaki Wanglee Konağı hâlâ açık. Sino-Tay mimari ve Çin tapınağıyla bilinir (butik otele dönüştürülüyor — gitmeden açık mı kontrol et).',
+    desc_en:'A historic port/warehouse on the Khlong San bank. Opened in 1850 by Thai-Chinese businessman Phra Phisan Sombat; served steamboats from British Malaya, China and Hong Kong (the name comes from Chinese for "steamboat"). In 1919 the Wanglee family took it over for their agriculture business; the adjacent Wanglee Mansion is still open. Known for Sino-Thai architecture and a Chinese shrine (being turned into a boutique hotel — check it\'s open before going).',
+    price:'Ücretsiz',
+    hours:'08:00–18:00 (hafta sonu daha geç)',
+    getthere:'Khlong San, nehir kıyısı · feribot',
+    tip_tr:'Son yıllarda çok sessizleşti, bazı dükkânlar kapalı; yine de Sino-Tay mimari ve Çin türbesi görülmeye değer. Gitmeden güncel durumu kontrol et.',
+    tip_en:'Has gone very quiet lately, some shops closed; still worth it for the Sino-Thai architecture and Chinese shrine. Check current status before going.',
+    keys:'lhong 1919 long liman port khlong san wanglee 1850 steamboat çin chinese sino thai mimari türbe shrine butik otel'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Holy Rosary Kilisesi (Kalawar)', name_en:'Holy Rosary Church (Kalawar)', thai:'วัดแม่พระลูกประคำ',
+    desc_tr:'Nehir kıyısındaki ilk Portekiz kilisesi, 1784\'te kuruldu (ilk hali ahşap, kazıklı). 1891–1897\'de Portekizli misyonerlerce yeniden, Gotik Revival tarzında yüksek çan kulesi ve vitraylarla inşa edildi. Talat Noi\'da, nehir yürüyüşünün güzel duraklarından.',
+    desc_en:'The first Portuguese church on the riverbank, founded 1784 (originally a stilted wooden structure). Rebuilt 1891–1897 by Portuguese missionaries in Gothic Revival style with a tall steeple and stained-glass windows. In Talat Noi, a lovely stop on the river walk.',
+    price:'Ücretsiz',
+    hours:'≈16:30–18:30 (Pazar sabah da)',
+    getthere:'Talat Noi, nehir kıyısı · Tha Din Daeng yakını',
+    tip_tr:'Bir ibadet yeri; saygılı ol, fotoğraf için değil ibadet için açık. Şehrin gürültüsünde sakin bir mola.',
+    tip_en:'A place of worship; be respectful, it\'s open for prayer not photos. A calm respite from the city noise.',
+    keys:'holy rosary kalawar kilise church portekiz portuguese 1784 gotik gothic talat noi vitray nehir'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Princess Mother Memorial Park', name_en:'Princess Mother Memorial Park', thai:'อุทยานเฉลิมพระเกียรติสมเด็จย่า',
+    desc_tr:'Khlong San\'da küçük, sakin bir cep parkı. 1993\'te Kral Rama IX\'un annesi Prenses Anne anısına yapıldı; ortasında hayatını anlatan küçük bir müze var. Arazi, nehir boyunca toprak sahibi olan Nana ailesinin bağışıyla oluştu — eski RBMC (Rander Bramah Car Co., 1913) şirket binalarının kalıntıları park içinde duruyor.',
+    desc_en:'A small, quiet pocket park in Khlong San. Created in 1993 in memory of the Princess Mother (mother of King Rama IX); a little museum in the middle tells her life story. The land was donated by the Nana family, who owned riverside land — remnants of their old RBMC (Rander Bramah Car Co., 1913) company buildings stand in the park.',
+    price:'Ücretsiz',
+    hours:'06:00–18:00',
+    getthere:'Khlong San, Chao Phraya Sky Park\'tan yürüme · feribot',
+    tip_tr:'Chao Phraya Sky Park\'tan (eski terk edilmiş demiryolu köprüsü, 2016\'da yeşil alana çevrildi) yürüyerek bağlanır. Yakında Gong Wu (Lord Guan) Türbesi — ~300 yıllık, Tayland\'ın en eskilerinden.',
+    tip_en:'Connected on foot from the Chao Phraya Sky Park (old abandoned rail bridge turned green space in 2016). Nearby the Gong Wu (Lord Guan) Shrine — ~300 years old, one of Thailand\'s oldest.',
+    keys:'princess mother memorial park prenses anne 1993 rama 9 nana rbmc khlong san sky park müze gong wu lord guan türbe shrine'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Chao Phraya Sky Park', name_en:'Chao Phraya Sky Park', thai:'สวนลอยฟ้าเจ้าพระยา',
+    desc_tr:'Phra Pokklao Köprüsü\'nün ortasındaki, 1984\'te terk edilen eski demiryolu köprüsü üzerine 2016 fikriyle kurulan yükseltilmiş yeşil yürüyüş yolu. Nehri yürüyerek geçmenin keyifli yolu; iki yönde panoramik nehir ve şehir manzarası. Trafiğin ortasında olduğu için sessiz/temiz hava beklenmez ama gün batımı güzel.',
+    desc_en:'An elevated green walkway on the old rail bridge (abandoned 1984) in the middle of the Phra Pokklao Bridge, conceived in 2016. A pleasant way to cross the river on foot; panoramic river and city views both ways. It\'s between traffic lanes, so don\'t expect quiet/fresh air, but sunset is lovely.',
+    price:'Ücretsiz',
+    hours:'05:00–20:00',
+    getthere:'Giriş King Prajadhipok Park üzerinden (ana caddeden değil)',
+    tip_tr:'Geçiş ~10 dk. En iyi vakit gün batımı. Talat Noi / Khlong San nehir yürüyüşünü Eski Şehir\'e bağlar.',
+    tip_en:'~10 min to cross. Best at sunset. Links the Talat Noi / Khlong San river walk to the Old City.',
+    keys:'chao phraya sky park gökyüzü park köprü bridge phra pokklao demiryolu rail 1984 2016 yürüyüş nehir gün batımı'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Pom Pi Chai Fort & Eski Limanlar', name_en:'Pom Pi Chai Fort & Old Ports', thai:'ป้อมป้องปัจจามิตร',
+    desc_tr:'Bangkok\'ta ayakta kalan üç kaleden biri (1852, Rama IV); nehrin bu bölümünü ve Khlong Padung Krung Kasem ağzını izlemek, ayrıca sömürge (özellikle Fransız) tehdidine karşı kurulmuştu. Çevredeki Tha Din Daeng kıyısı, 1855 Bowring Antlaşması\'yla (Siam–İngiltere serbest ticaret) büyüyen eski liman bölgesiydi; bugün yalnızca bir liman kalmış. Diğer iki kale: Phra Sumen (Khao San yakını) ve Fort Mahakan (Golden Mount).',
+    desc_en:'One of three surviving forts in Bangkok (1852, Rama IV); built to watch this stretch of river and the mouth of Khlong Padung Krung Kasem, and against colonial (especially French) threat. The surrounding Tha Din Daeng bank was an old port district that grew with the 1855 Bowring Treaty (Siam–Britain free trade); only one port remains today. The other two forts: Phra Sumen (near Khao San) and Fort Mahakan (Golden Mount).',
+    price:'Ücretsiz',
+    hours:'—',
+    getthere:'Khlong San kanal ağzı, nehir kıyısı',
+    tip_tr:'Yanındaki Khlong San feribot iskelesinden Holy Rosary Kilisesi, River City ve karşıda Marine Department binası görülür.',
+    tip_en:'From the adjacent Khlong San ferry pier you can see Holy Rosary Church, River City and the Marine Department building across the water.',
+    keys:'pom pi chai fort kale 1852 rama 4 bowring antlaşması 1855 liman port tha din daeng phra sumen mahakan khlong padung krung kasem sömürge'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Khun Chan', name_en:'Wat Khun Chan', thai:'วัดขุนจันทร์',
+    desc_tr:'Wat Paknam\'ın yakınında, Phasi Charoen\'de sakin, az kalabalık bir tapınak. Yatan bir Buda heykeli, canlı renkli detaylar ve sıra dışı heykeller. Buradan dev Buda\'nın (Wat Paknam) güzel fotoğrafı çekilir. Yerel, huzurlu bir atmosfer.',
+    desc_en:'A quiet, uncrowded temple near Wat Paknam in Phasi Charoen. A reclining Buddha, vividly colourful details and unusual statues. Great spot to photograph the giant Buddha (Wat Paknam). A local, peaceful atmosphere.',
+    price:'Ücretsiz',
+    hours:'06:30–21:00',
+    getthere:'Wat Paknam\'dan köprüyle yürüme · MRT Bang Phai yakını',
+    tip_tr:'Wat Paknam ile aynı ziyarete kolayca sığar; dev Buda\'yı tekne parası vermeden buradan fotoğraflayabilirsin.',
+    tip_en:'Easily combined with Wat Paknam; photograph the giant Buddha from here without paying for a boat.',
+    keys:'wat khun chan tapınak temple wat paknam phasi charoen yatan buda reclining renkli sakin köprü dev buda fotoğraf'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Bangkok Şehir Sütunu Tapınağı', name_en:'Bangkok City Pillar Shrine', thai:'ศาลหลักเมือง',
+    desc_tr:'Grand Palace çitinin hemen karşısında, şehrin kuruluşunda dikilen "şehir sütunu"nu (lak mueang) barındıran kutsal türbe. Tay inancında saygı göstermenin hayata iyi şans ve istikrar getirdiğine inanılır; insanlar umut sembolü olarak bezler bağlar. Bangkok\'un çok ikonik bir manzarası.',
+    desc_en:'A sacred shrine just across from the Grand Palace wall, housing the "city pillar" (lak mueang) erected at the city\'s founding. In Thai belief, paying respect here brings good luck and stability; people tie cloths as a symbol of hope. A very iconic Bangkok sight.',
+    price:'Ücretsiz',
+    hours:'06:30–18:30',
+    getthere:'MRT Sanam Chai · Grand Palace bitişiği',
+    tip_tr:'Sanam Chai MRT\'den Grand Palace/Wat Pho\'ya yürürken yol üstünde; Eski Şehir gezisine doğal olarak oturur.',
+    tip_en:'On the way from Sanam Chai MRT to the Grand Palace/Wat Pho; fits naturally into an Old City visit.',
+    keys:'şehir sütunu city pillar lak mueang türbe shrine grand palace kutsal sanam chai uğur bez eski şehir'
+  },
+  {
+    type:'market', cat:['market'],
+    name_tr:'Tha Tien Pazarı & İskelesi', name_en:'Tha Tien Market & Pier', thai:'ท่าเตียน',
+    desc_tr:'Wat Pho\'nun hemen karşısında, açık sarı eski tarz bir bina ve canlı bir mahalle. Hediyelik eşya, giysi, birkaç restoran; geleneksel Tay kıyafeti kiralama dükkânları (fotoğraf için). Tha Tien İskelesi\'nden nehri geçip Wat Arun\'a feribot (~5 ฿) kalkar; iskele gün batımında Wat Arun manzarasıyla çok popüler.',
+    desc_en:'Right across from Wat Pho, a pale-yellow old-style building and a lively quarter. Souvenirs, clothes, a few restaurants; traditional Thai costume rental shops (for photos). From Tha Tien Pier a ferry crosses to Wat Arun (~5 ฿); the pier is very popular at sunset for the Wat Arun view.',
+    price:'Pazar ücretsiz · feribot ~5 ฿',
+    hours:'07:00–20:00',
+    getthere:'Wat Pho karşısı · MRT Sanam Chai · Tha Tien iskelesi',
+    tip_tr:'Taze meyve, taze süt-tereyağlı haşlanmış mısır gibi atıştırmalıklar var. Soi Tha Suwan ara sokağı arka planda Wat Arun ile ünlü bir fotoğraf noktası.',
+    tip_en:'Snacks like fresh fruit and boiled corn with milk and butter. The lane Soi Tha Suwan is a famous photo spot with Wat Arun behind.',
+    keys:'tha tien pazarı market iskele pier wat pho wat arun feribot kostüm kiralama soi tha suwan fotoğraf gün batımı meyve mısır'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Tien Sin (Vegan)', name_en:'Tien Sin (Vegan)', thai:'เทียนซิน',
+    desc_tr:'Silom\'da tamamen vegan Tay-Çin büfe restoran. Pirinç + seçtiğin yemekler 40–55 ฿ gibi çok uygun fiyatlarla. Yerli halkla dolu, sade atmosfer. Menüden noodle çorbası da söylenebilir.',
+    desc_en:'A fully vegan Thai-Chinese buffet restaurant in Silom. Rice + dishes you point at for as little as 40–55 ฿. Packed with locals, simple atmosphere. Can also order noodle soup from the menu.',
+    price:'₿40–55 (büfe) · ₿50–70 (menü)',
+    hours:'Pzt–Cmt 06:30–17:00, Paz kapalı',
+    getthere:'Silom, Soi Si Wiang · BTS Chong Nonsi yakını',
+    tip_tr:'Öğleden önce git — daha çok seçenek var. Her şey vegan, endişelenme.',
+    tip_en:'Go before noon for more choices. Everything is vegan, no worries.',
+    keys:'tien sin vegan restoran restaurant silom büfe buffet çin chinese ucuz cheap pirinç rice noodle'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Ethos Vegetarian & Vegan', name_en:'Ethos Vegetarian & Vegan', thai:'',
+    desc_tr:'Khao San Road yakınında, geniş vejetaryen/vegan menüsüyle rahat, samimi bir restoran. Tom kha çorbası, yeşil köri, meyve smoothie; esmer pirinç seçeneği. Loş ışıklar, farklı oturma düzenleri. ₿200–400. Gece yarısına kadar açık.',
+    desc_en:'A cosy, friendly vegetarian/vegan restaurant near Khao San Road. Tom kha soup, green curry, fruit smoothies; brown rice option. Mood lighting, varied seating. ₿200–400. Open till midnight.',
+    price:'₿200–400',
+    hours:'07:30–00:00 her gün',
+    getthere:'85/2 Thanon Tanao, Phra Nakhon · Khao San yakını',
+    tip_tr:'Eski Şehir tapınak turu sonrası vejetaryen yemek için en iyi seçeneklerden. Geç saate kadar açık.',
+    tip_en:'One of the best vegetarian options after an Old City temple tour. Open late.',
+    keys:'ethos vegetarian vegan restoran restaurant khao san köri curry smoothie gece yarısı midnight eski şehir'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Try Me Thai & Vegetarian', name_en:'Try Me Thai & Vegetarian', thai:'',
+    desc_tr:'Samsen\'de, Khao San yakınında uygun fiyatlı Tay + vejetaryen restoran. Geniş menü, büyük porsiyonlar. Gece yarısına kadar açık — geç yemek için ideal. İkramiye olarak mango yapışkan pirinç spring roll veriyorlar.',
+    desc_en:'An affordable Thai + vegetarian restaurant on Samsen, near Khao San. Wide menu, big portions. Open till midnight — ideal for late eats. Complimentary mango sticky rice spring roll.',
+    price:'₿1–200',
+    hours:'10:00–00:00 her gün',
+    getthere:'Soi Samsen 4, Phra Nakhon · Khao San yakını',
+    tip_tr:'Balık alerjisi gibi özel isteklere uyum sağlıyorlar. Servis biraz dağınık olabilir ama yemekler lezzetli ve ucuz.',
+    tip_en:'Accommodating with special requests like fish allergy. Service can be disorganized but food is tasty and cheap.',
+    keys:'try me thai vegetarian restoran restaurant samsen khao san ucuz cheap gece midnight vejetaryen mango'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Phed Mark (Mark Wiens) 🌿 Veg seçenek var', name_en:'Phed Mark (Mark Wiens) 🌿 Veg option', thai:'เผ็ดมาร์ค',
+    desc_tr:'YouTuber Mark Wiens\'ın Sukhumvit\'teki pad krapao dükkânı. Domuz, dana, wagyu, kalamar veya **tofu (vejetaryen)** seçeneği; her tabağa kızarmış ördek yumurtası. Acılık seviyesi seçilir. Küçük mekân, sıra uzun olabilir.',
+    desc_en:'YouTuber Mark Wiens\' pad krapao shop on Sukhumvit. Pork, beef, wagyu, squid or **tofu (vegetarian)** option; each plate topped with a fried duck egg. Choose your spice level. Small place, queues can be long.',
+    price:'₿1–200',
+    hours:'10:00–19:00 her gün',
+    getthere:'300 Sukhumvit Rd · BTS Phra Khanong',
+    tip_tr:'Sıra 1+ saat olabiliyor; öğle öncesi veya geç öğlen git. Tofu seçeneği vejetaryen.',
+    tip_en:'Queue can be 1+ hour; go before noon or late afternoon. Tofu option is vegetarian.',
+    keys:'phed mark mark wiens pad krapao fesleğen basil sukhumvit acı spicy ördek yumurta duck egg tofu vegetarian vejetaryen'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Chef Ple Thai Mango Sticky Rice 🌿', name_en:'Chef Ple Thai Mango Sticky Rice 🌿', thai:'',
+    desc_tr:'Ratchaprarop\'ta 24 saat açık, mango sticky rice (yapışkan pirinçli mango) uzmanı. Taze kesilmiş tatlı mango + hindistan cevizi sütlü yapışkan pirinç. Basit ama efsanevi. İki kişiye yetecek porsiyonlar ~140 ฿.',
+    desc_en:'A 24-hour mango sticky rice specialist on Ratchaprarop. Freshly cut sweet mango + coconut sticky rice. Simple but legendary. Portions for two ~140 ฿.',
+    price:'~140 ฿',
+    hours:'24 saat',
+    getthere:'Ratchaprarop Rd 94/1 · BTS Ratchaprarop yakını',
+    tip_tr:'Tamamen vejetaryen/vegan. Tayland\'da mutlaka denenmesi gereken tatlı.',
+    tip_en:'Fully vegetarian/vegan. A must-try Thai dessert.',
+    keys:'chef ple mango sticky rice yapışkan pirinç tatlı dessert ratchaprarop 24 saat vejetaryen vegan'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Breakfast Story Asok 🌿 Veg seçenek var', name_en:'Breakfast Story Asok 🌿 Veg option', thai:'',
+    desc_tr:'Sukhumvit / Asok\'ta popüler bir kahvaltı restoranı. Batı tarzı kahvaltılar: pancake, scrambled eggs, poutine, tost + sınırsız filtre kahve. ₿200–400. Büyük porsiyonlar, taze malzemeler. 07:00–23:00 açık — geç kahvaltı için de ideal.',
+    desc_en:'A popular breakfast restaurant on Sukhumvit / Asok. Western-style breakfasts: pancakes, scrambled eggs, poutine, toast + free-refill filter coffee. ₿200–400. Big portions, fresh ingredients. Open 07:00–23:00 — great for late breakfast too.',
+    price:'₿200–400',
+    hours:'07:00–23:00 her gün',
+    getthere:'Sukhumvit Rd 392/9 · BTS Asok / MRT Sukhumvit',
+    tip_tr:'Vejetaryen seçenekler mevcut (yumurtalı kahvaltılar, pancake). Kahvesi çok iyi, sınırsız refill.',
+    tip_en:'Vegetarian options available (egg breakfasts, pancakes). Great coffee, unlimited refills.',
+    keys:'breakfast story asok kahvaltı breakfast sukhumvit pancake yumurta egg poutine tost kahve coffee batı western vejetaryen'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Kaek Kao Kua 🌿 Vegan', name_en:'Kaek Kao Kua 🌿 Vegan', thai:'แกงข้าวคั่ว',
+    desc_tr:'Sukhumvit Soi 27\'de gizli, tamamen vegan Tay restoranı. Aile işletmesi, kadın girişimci. Khao Soi (kremsi hindistan cevizli köri), Bamee Moodaeng noodleları, pad thai, tom yum — hepsi bitkisel. Otantik lezzet, hafif ve dengeli. 4.8 puan.',
+    desc_en:'A hidden, fully vegan Thai restaurant on Sukhumvit Soi 27. Family-run, women-owned. Khao Soi (creamy coconut curry), Bamee Moodaeng noodles, pad thai, tom yum — all plant-based. Authentic flavour, light and balanced. 4.8 rating.',
+    price:'₿100–200',
+    hours:'Pzt–Çar & Cuma–Paz 11:00–19:00, Per kapalı',
+    getthere:'Sukhumvit Soi 27 (Carlton Hotel arkası) · BTS Asok / MRT Sukhumvit',
+    tip_tr:'Nakit getir (QR ödeme yalnızca Tay hesapları). Khao Soi mutlaka dene. Küçük mekân, kalabalık saatleri atla.',
+    tip_en:'Bring cash (QR pay only for Thai accounts). Must try the Khao Soi. Small place, avoid peak hours.',
+    keys:'kaek kao kua vegan restoran restaurant sukhumvit soi 27 khao soi bamee pad thai tom yum bitkisel plant based kadın women'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Began Vegan 🌿 Vegan', name_en:'Began Vegan 🌿 Vegan', thai:'',
+    desc_tr:'Grand Palace yakınında tamamen vegan Tay restoranı. Vegan çıtır domuz karın, pad thai, kırmızı köri, kruvasan — hepsi bitkisel. Renkli pirinç seçeneği. 4.6 puan. Uygun fiyatlı, hızlı servis.',
+    desc_en:'A fully vegan Thai restaurant near the Grand Palace. Vegan crispy pork belly, pad thai, red curry, croissant — all plant-based. Colourful rice option. 4.6 rating. Affordable, quick service.',
+    price:'₿100–250',
+    hours:'10:00–19:00 her gün',
+    getthere:'Soi Tha Suphan, Phra Nakhon · Grand Palace yakını',
+    tip_tr:'Grand Palace / Wat Pho gezisi sonrası mükemmel vegan mola. Kruvasan bile vegan ve çok iyi.',
+    tip_en:'Perfect vegan stop after a Grand Palace / Wat Pho visit. Even the croissant is vegan and great.',
+    keys:'began vegan restoran restaurant grand palace phra nakhon pad thai köri curry kruvasan croissant bitkisel plant based çıtır domuz pork'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Vegan Mahanakhon 🌿 Vegan', name_en:'Vegan Mahanakhon 🌿 Vegan', thai:'',
+    desc_tr:'Wat Arun yakınında, 120 yıllık tik ahşap koloniyal evde zarif bir vegan Tay restoranı. 4.9 puan. Kaju fıstıklı vegan tavuk (et gibi tadı var), dim sum, patlıcan yemekleri, mango tatlısı. Çölyak dostu seçenekler (glüten etiketi). Kedi de karşılıyor.',
+    desc_en:'An elegant vegan Thai restaurant near Wat Arun, in a 120-year-old teakwood colonial house. 4.9 rating. Vegan cashew chicken (tastes like real meat), dim sum, aubergine dishes, mango dessert. Celiac-friendly options (gluten labelled). A cat greets you.',
+    price:'₿200–500',
+    hours:'10:30–21:00 her gün',
+    getthere:'Arun Amarin Rd 661, Bangkok Noi · Wat Arun yakını',
+    tip_tr:'Biraz uzakta ama yoluna değer. Akşam yemeği için rezervasyon önerilir. Atmosfer çok şık, özel bir akşam için ideal.',
+    tip_en:'A bit out of the way but worth the trip. Reservations recommended for dinner. Very classy atmosphere, ideal for a special evening.',
+    keys:'vegan mahanakhon restoran restaurant wat arun tik ahşap teak koloniyal kaju cashew dim sum patlıcan aubergine glüten celiac kedi cat şık elegant'
+  },
+  {
+    type:'food', cat:['food'],
+    name_tr:'Ruyi Vegetarian 🌿 Vejetaryen', name_en:'Ruyi Vegetarian 🌿 Vegetarian', thai:'',
+    desc_tr:'Hua Lamphong yakınında, Tay-Çin vejetaryen restoran. Char siu\'lu yumurtalı noodle, tom yum çorbası, çeşitli et alternatifleri. Uygun fiyat, yerel atmosfer. 4.7 puan. Ücretsiz buzlu çay ikramı. Sıra olabilir — beklemeye değer.',
+    desc_en:'A Thai-Chinese vegetarian restaurant near Hua Lamphong. Egg noodles with char siu, tom yum soup, various meat alternatives. Affordable, local atmosphere. 4.7 rating. Free iced tea included. Can be a wait — worth it.',
+    price:'₿100–200',
+    hours:'10:00–21:00 her gün',
+    getthere:'Soi Phraya Singhaseni · MRT Hua Lamphong (çıkış 3)',
+    tip_tr:'Talat Noi\'ye yürüme mesafesinde; ikisini birleştir. Sashimi sipariş etme, diğer her şey güzel.',
+    tip_en:'Walking distance to Talat Noi; combine them. Skip the sashimi, everything else is great.',
+    keys:'ruyi vegetarian vejetaryen restoran restaurant hua lamphong çin chinese noodle tom yum char siu tofu ucuz buzlu çay'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'PORTS Coffee', name_en:'PORTS Coffee', thai:'',
+    desc_tr:'Tha Tien / Maha Rat Rd\'da, Japon esintili minimalist özel kahve kafesi. 4.8 puan. Kendi kavurdukları çekirdeklerden espresso (İtalyan tarzı, yoğun/kısa shot). Kruvasan ve canelé. Küçük mekân, iki katlı; üst kat daha sakin.',
+    desc_en:'A Japanese-inspired minimalist specialty café on Tha Tien / Maha Rat Rd. 4.8 rating. Espresso from their own roasted beans (Italian style, intense/short shot). Croissant and canelé. Small, two floors; upstairs is calmer.',
+    price:'₿150–300',
+    hours:'09:00–18:00 her gün',
+    getthere:'Maha Rat Rd 392/16 · MRT Sanam Chai · Wat Pho yakını',
+    tip_tr:'Wat Arun ziyaretinden sonra kahve molası için ideal konum. Filtre kahve ve çekirdek seçimi çok iyi.',
+    tip_en:'Ideal coffee stop after a Wat Arun visit. Great filter coffee and bean selection.',
+    keys:'ports coffee kafe cafe tha tien maha rat japon japanese espresso kavurma roaster kruvasan canele wat pho wat arun'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'Hia Mak Tofu Pudding & Grass Jelly 🌿', name_en:'Hia Mak Tofu Pudding & Grass Jelly 🌿', thai:'',
+    desc_tr:'60+ yıldır aynı amcanın işlettiği efsanevi tatlıcı. İki menü: zencefilli soya sütü pudingi veya çimen jölesi — ikisi de sıcak ya da soğuk. 20 ฿/kase. İpeksi yumuşak tofu, güçlü zencefil aroması, çıtır fasulye. Tamamen vegan.',
+    desc_en:'A legendary dessert stall run by the same uncle for 60+ years. Two items: tofu pudding in ginger soup or grass jelly — both hot or cold. 20 ฿/bowl. Silky-smooth tofu, strong ginger aroma, crispy beans. Fully vegan.',
+    price:'20 ฿/kase',
+    hours:'Sal–Paz 10:30–16:00, Pzt kapalı',
+    getthere:'Phra Nakhon, Grand Palace / Tha Tien yakını',
+    tip_tr:'Zencefili yoğun bulabilirsin — alışık değilsen çimen jölesini dene. İkisi de 20 ฿, inanılmaz ucuz.',
+    tip_en:'Ginger can be intense — if not used to it, try the grass jelly. Both 20 ฿, incredibly cheap.',
+    keys:'hia mak tofu pudding grass jelly zencefil ginger çimen jöle tatlı dessert vegan 60 yıl tha tien grand palace ucuz cheap'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'ViVi The Coffee Place', name_en:'ViVi The Coffee Place', thai:'',
+    desc_tr:'Chao Phraya kıyısında, Wat Arun\'a karşıdan doğrudan manzaralı kafe. Gün batımında tapınak altın rengine dönerken izlemek için Bangkok\'un en iyi noktalarından. İç mekân küçük (klimalı), nehir terasında oturmak asıl deneyim. Tay çayı ve cheesecake popüler.',
+    desc_en:'A riverside café with a direct view of Wat Arun across the Chao Phraya. One of Bangkok\'s best spots to watch the temple turn golden at sunset. Indoor space small (A/C), the river terrace is the real experience. Thai tea and cheesecake popular.',
+    price:'₿100–250',
+    hours:'10:00–20:00 her gün',
+    getthere:'Soi Pansuk, Phra Nakhon · MRT Sanam Chai · Museum Siam yakını',
+    tip_tr:'Gün batımı için 15:00–16:00 gibi erken gel, iyi masa kap. Nehir esintisi harika.',
+    tip_en:'Come early (15:00–16:00) for sunset, grab a good seat. The river breeze is wonderful.',
+    keys:'vivi coffee place kafe cafe wat arun manzara view gün batımı sunset chao phraya nehir river teras terrace tay çayı thai tea cheesecake'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'SURIYA COFFEE (Wat Klang Market)', name_en:'SURIYA COFFEE (Wat Klang Market)', thai:'',
+    desc_tr:'Thonburi\'de, Wat Klang pazarının içinde gizli, geleneksel Tay kahve dükkânı. Kanal manzarası + uzakta Wat Paknam\'ın dev Buda\'sı görünür. Tay boran (geleneksel) kahve, ızgara ekmek + tatlı süt, sıcak Tay çayı. Sabah 06:00\'da açılıp 11:00\'da kapanıyor — erken kuş!',
+    desc_en:'A hidden traditional Thai coffee shop inside the Wat Klang market in Thonburi. Canal view + Wat Paknam\'s giant Buddha visible in the distance. Thai boran (traditional) coffee, grilled bread + sweet milk, hot Thai tea. Opens 06:00, closes 11:00 — early bird only!',
+    price:'₿30–80',
+    hours:'Sal–Paz 06:00–11:00, Pzt kapalı',
+    getthere:'Soi Wat Chantharam, Thonburi · Talad Pru yakını · motosiklet taksi',
+    tip_tr:'07:00\'de git — bazı menüler hızlı tükeniyor. Wat Paknam ziyaretiyle birleştir, çok yakın. Kanal manzarasıyla nostalji dolu.',
+    tip_en:'Go at 07:00 — some items sell out fast. Combine with a Wat Paknam visit, very close. Full of nostalgia with canal views.',
+    keys:'suriya coffee wat klang market thonburi kanal canal geleneksel traditional tay kahve thai coffee boran ızgara ekmek dev buda wat paknam sabah erken'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'MATCHA PEOPLE', name_en:'MATCHA PEOPLE', thai:'',
+    desc_tr:'Ari\'de (Soi Phahon Yothin 7) Japonya kalitesinde matcha uzmanı kafe. Zengin, dengeli, ne çok acı ne çok tatlı matcha. İmza içecekleri: Matcha People (kelebek bezelye köpüklü), Matcha Latte, Matcha Cherry Coke. Şık, minimalist mekân ama çok kalabalık olabiliyor — erken git.',
+    desc_en:'A Japan-grade matcha specialist café in Ari (Soi Phahon Yothin 7). Rich, balanced matcha, neither too bitter nor too sweet. Signatures: Matcha People (butterfly pea foam), Matcha Latte, Matcha Cherry Coke. Stylish, minimalist space but can get very crowded — go early.',
+    price:'₿120–200',
+    hours:'08:00–17:00 her gün',
+    getthere:'Soi Phahon Yothin 7 · BTS Ari',
+    tip_tr:'09:00 öncesi git, sıra çok uzayabiliyor. Öğle saatlerinde ofis çalışanlarıyla dolar.',
+    tip_en:'Go before 09:00, the queue can get very long. Packed with office workers at lunch.',
+    keys:'matcha people kafe cafe ari phahon yothin japon japan matcha latte cherry coke kelebek bezelye butterfly pea minimalist'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'Remedy Coffee Roastery', name_en:'Remedy Coffee Roastery', thai:'',
+    desc_tr:'Golden Mount (Wat Saket) yakınında, Saen Saep kanalı kıyısında şirin bir kavurma kafesi. 4.8 puan. Dış mekân terası kanalı ve Wat Saket\'i görüyor — yağmurda bile atmosferik. Özenli kahve (caramel macchiato çok iyi), ev yapımı cheesecake. Harika müzik ve rahat koltuklar.',
+    desc_en:'A charming roastery café near the Golden Mount (Wat Saket), on the Saen Saep canal. 4.8 rating. Outdoor deck overlooks the canal and Wat Saket — atmospheric even in the rain. Carefully crafted coffee (caramel macchiato is great), homemade cheesecake. Great music and comfy armchairs.',
+    price:'₿100–200',
+    hours:'Pzt–Sal & Per–Cuma 08:30–17:30, Cmt–Paz 10:00–18:00, Çar kapalı',
+    getthere:'Soi Ban Bat, Pom Prap · Golden Mount / Wat Saket yakını',
+    tip_tr:'Eski Şehir tapınak turundan sonra kanal kıyısında mükemmel mola. Wat Saket manzarası bonus.',
+    tip_en:'Perfect canal-side break after an Old City temple tour. The Wat Saket view is a bonus.',
+    keys:'remedy coffee roastery kafe cafe golden mount wat saket kanal canal saen saep kavurma cheesecake caramel macchiato eski şehir'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Dragon Temple (Wat Samphran)', name_en:'Dragon Temple (Wat Samphran)', thai:'วัดสามพราน',
+    desc_tr:'Nakhon Pathom\'da (Bangkok→Kanchanaburi yolu üstünde), 17 katlı silindirik kulenin etrafına sarılmış dev bir ejderha heykeli. Asansör veya yürüyerek tepeye çıkılır (80 ฿). İçeride garip, fantastik atmosfer. Dışarıdan çok etkileyici, içi biraz bakımsız.',
+    desc_en:'In Nakhon Pathom (on the Bangkok→Kanchanaburi road), a giant dragon sculpture wrapping around a 17-storey cylindrical tower. Lift or walk to the top (80 ฿). Strange, fantastic atmosphere inside. Very impressive from outside, a bit run-down inside.',
+    price:'80 ฿',
+    hours:'08:00–17:00',
+    getthere:'Nakhon Pathom, Sam Phran · Bangkok\'tan ~1 saat',
+    tip_tr:'Kanchanaburi yolunda mola olarak ideal. Instagram için harika ama beklentiyi düşük tut — içi göründüğü kadar bakımlı değil.',
+    tip_en:'Ideal as a stop on the way to Kanchanaburi. Great for Instagram but lower your expectations — inside isn\'t as maintained as the outside.',
+    keys:'dragon temple ejderha tapınak wat samphran nakhon pathom kule tower fantastik instagram kanchanaburi yolu'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Giant Raintree (Monkey Pod)', name_en:'Giant Raintree (Monkey Pod)', thai:'ต้นจามจุรียักษ์',
+    desc_tr:'Kanchanaburi\'nin Tha Muang ilçesinde devasa yağmur ağacı (Monkey Pod). Geniş gövdesi ve taç yapısıyla fotoğrafçılar için cennet. Çevresinde yerel yiyecek tezgâhları ve kahve dükkânı. Ücretsiz giriş.',
+    desc_en:'A giant rain tree (Monkey Pod) in Kanchanaburi\'s Tha Muang district. A paradise for photographers with its huge trunk and canopy. Local food stalls and a coffee shop around it. Free entry.',
+    price:'Ücretsiz',
+    hours:'08:00–17:00',
+    getthere:'Tha Muang, Kanchanaburi · Wat Tham Suea yakını',
+    tip_tr:'Sabah erken git — tur otobüsleri gelince çok kalabalık. Wat Tham Suea ile birleştir, çok yakın.',
+    tip_en:'Go early morning — it gets crowded when tour buses arrive. Combine with Wat Tham Suea, very close.',
+    keys:'giant raintree monkey pod ağaç tree kanchanaburi tha muang fotoğraf dev büyük doğa nature'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Tham Suea (Kaplan Mağarası)', name_en:'Wat Tham Suea (Tiger Cave Temple)', thai:'วัดถ้ำเสือ',
+    desc_tr:'Kanchanaburi\'de tepeye kurulmuş tapınak; devasa altın oturan Buda uzaktan görülür. Tepede sekizgen chedi\'ye çıkılır (5 kat), her kattan pirinç tarlaları ve Mae Klong vadisinin panoramik manzarası. Tram veya merdivenle çıkılır. 1–2 saat ayır.',
+    desc_en:'A hilltop temple in Kanchanaburi; the giant golden seated Buddha is visible from far away. Climb the octagonal chedi (5 floors) for panoramic views of rice fields and the Mae Klong valley from each level. Tram or stairs up. Allow 1–2 hours.',
+    price:'Ücretsiz (tram ayrı ücret)',
+    hours:'08:00–17:00',
+    getthere:'Tha Muang, Kanchanaburi · Giant Raintree yakını',
+    tip_tr:'Sıcak günde su ve güneş kremi şart. Saygılı kıyafet (omuz+diz kapalı). Merdiven zorsa tram var.',
+    tip_en:'Water and sunscreen essential on hot days. Respectful dress (shoulders+knees covered). Tram available if stairs are tough.',
+    keys:'wat tham suea tiger cave kaplan mağara tapınak temple kanchanaburi tepe hilltop altın buda golden buddha manzara panorama chedi pirinç rice'
+  },
+  {
+    type:'market', cat:['market'],
+    name_tr:'Kaew Hediyelik Eşya', name_en:'Kaew Souvenir Shop', thai:'',
+    desc_tr:'Kanchanaburi\'nin Tha Muang ilçesinde büyük hediyelik eşya ve yerel tatlılar dükkânı. Thong muan, Tay katmanlı jöle, yerel kurabiyeler, el sanatları, tişörtler. İki bina: biri yiyecek/içecek, diğeri hatıra eşyası. Ücretsiz tadımlıklar.',
+    desc_en:'A large souvenir and local-sweets shop in Kanchanaburi\'s Tha Muang. Thong muan, Thai layer jelly, local cookies, crafts, T-shirts. Two buildings: one food/drinks, one souvenirs. Free samples.',
+    price:'Uygun',
+    hours:'07:00–18:00 (Cmt–Paz 19:00)',
+    getthere:'Tha Muang, Kanchanaburi · Wat Tham Suea yakını',
+    tip_tr:'Kanchanaburi\'den dönerken son alışveriş durağı olarak ideal.',
+    tip_en:'Ideal as a last shopping stop when leaving Kanchanaburi.',
+    keys:'kaew hediyelik souvenir tatlı sweet kurabiye cookie kanchanaburi tha muang alışveriş shopping hediye gift'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Savaş Mezarlığı (Don Rak)', name_en:'War Cemetery (Don Rak)', thai:'สุสานทหารสัมพันธมิตร',
+    desc_tr:'2. Dünya Savaşı\'nda Ölüm Demiryolu inşaatında hayatını kaybeden İngiliz, Avustralyalı ve Hollandalı savaş esirlerinin anıt mezarlığı. 6.982 mezar taşı, bakımlı çimenler ve çiçekler. Saygılı, derin bir atmosfer. Ücretsiz.',
+    desc_en:'Memorial cemetery for British, Australian and Dutch POWs who died building the Death Railway in WWII. 6,982 headstones, immaculate lawns and flowers. A solemn, deeply moving atmosphere. Free.',
+    price:'Ücretsiz',
+    hours:'08:00–17:00 her gün',
+    getthere:'Sangchuto Rd, Kanchanaburi şehir merkezi · Death Railway Museum karşısı',
+    tip_tr:'Sessiz ve saygılı davran. Death Railway Museum hemen karşısında — ikisini birlikte gez.',
+    tip_en:'Be quiet and respectful. Death Railway Museum is right across — visit both together.',
+    keys:'war cemetery savaş mezarlığı don rak kanchanaburi ww2 2 dünya savaşı esir pow ölüm demiryolu death railway ingiliz british avustralya'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Death Railway Museum', name_en:'Death Railway Museum & Research Centre', thai:'',
+    desc_tr:'Ölüm Demiryolu\'nun tüm hikâyesini anlatan kapsamlı müze. Savaş esirlerinin yaşadıkları, demiryolunun inşaat süreci, fotoğraflar ve belgeler. 170 ฿ giriş, yanında ücretsiz kahve/çay ikramı. War Cemetery\'nin hemen karşısında.',
+    desc_en:'A comprehensive museum telling the full story of the Death Railway. What POWs endured, the construction process, photos and documents. 170 ฿ entry, includes a free drink/tea/coffee. Right across from the War Cemetery.',
+    price:'170 ฿ (içecek dahil)',
+    hours:'09:00–16:30 her gün',
+    getthere:'Chao Khun Nen Rd, Kanchanaburi · War Cemetery karşısı',
+    tip_tr:'Personel çok bilgili ve tutkulu. En az 1.5 saat ayır, çok detaylı.',
+    tip_en:'Staff are very knowledgeable and passionate. Allow at least 1.5 hours, very detailed.',
+    keys:'death railway museum ölüm demiryolu müze kanchanaburi ww2 esir pow tren train burma birmanya tarih history'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Kwai Köprüsü', name_en:'Bridge over River Kwai', thai:'สะพานข้ามแม่น้ำแคว',
+    desc_tr:'Kanchanaburi\'nin simgesi — 2. Dünya Savaşı\'nda savaş esirleri tarafından inşa edilen tarihî demiryolu köprüsü. Üzerinde yürünebilir; tren geçtiğinde kenardaki sığınaklara çekilirsin. Ücretsiz, 24 saat açık. Nehrin iki yakasından girişi var.',
+    desc_en:'Kanchanaburi\'s icon — the historic WWII railway bridge built by POWs. Walk across it; when a train comes, step into the side refuges. Free, open 24 hours. Accessible from both banks.',
+    price:'Ücretsiz',
+    hours:'24 saat',
+    getthere:'Maenamkwai Rd, Kanchanaburi şehir merkezi',
+    tip_tr:'Tren geçişini izlemek çok etkileyici — hareket saatlerini önceden öğren. Keere Tara kafe 100 m ötede, köprü manzarasıyla yemek.',
+    tip_en:'Watching a train cross is very impressive — check timetables in advance. Keere Tara café is 100 m away with bridge-view dining.',
+    keys:'kwai köprüsü bridge river kwai kanchanaburi 2 dünya savaşı ww2 tren train esir pow tarihî historic demiryolu railway nehir'
+  },
+  {
+    type:'cafe', cat:['cafe'],
+    name_tr:'Keere Tara Cafe', name_en:'Keere Tara Cafe', thai:'',
+    desc_tr:'Kwai Nehri kıyısında, Kwai Köprüsü\'ne 100 m mesafede şık bir restoran-kafe. Köprü manzarasıyla yemek/içmek için en iyi konum. Canlı müzik akşamları. Yemekler orta-üst fiyat, lezzetler ılımlı ama manzara buna değer. ₿200–600.',
+    desc_en:'A stylish restaurant-café on the River Kwai, 100 m from the Kwai Bridge. The best location for dining/drinking with bridge views. Live music evenings. Food mid-upper price, flavours mild but the view makes up for it. ₿200–600.',
+    price:'₿200–600',
+    hours:'10:00–22:00 her gün',
+    getthere:'Maenamkwai Rd 431/1, Kanchanaburi · Kwai Köprüsü yanı',
+    tip_tr:'Nehir kenarı masa için erken git veya önceden ayırt. Gün batımında köprü manzarası muhteşem.',
+    tip_en:'Go early or book ahead for a riverside table. The bridge view at sunset is stunning.',
+    keys:'keere tara kafe cafe kanchanaburi kwai nehir river köprü bridge manzara view müzik music restoran'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Skywalk Kanchanaburi', name_en:'Skywalk Kanchanaburi', thai:'',
+    desc_tr:'Kanchanaburi şehir merkezinde, 150 m uzunluğunda, 12 m yüksekliğinde cam tabanlı yürüyüş yolu. Kwai Yai, Kwai Noi ve Mae Klong nehirlerinin buluşma noktasını 360° panoramik görüntüler. 60 ฿, bez ayakkabı dahil. Gün batımı fotoğrafı için mükemmel.',
+    desc_en:'A 150 m long, 12 m high glass-bottomed walkway in Kanchanaburi city centre. 360° panoramic views of the confluence of the Kwai Yai, Kwai Noi and Mae Klong rivers. 60 ฿, cloth shoes included. Perfect for sunset photos.',
+    price:'60 ฿',
+    hours:'08:00–19:00 her gün',
+    getthere:'Songkwai Rd 24/16, Kanchanaburi',
+    tip_tr:'Akşamüstü git — gün batımı ve dolunay muhteşem. Hafta içi daha sakin.',
+    tip_en:'Go late afternoon — sunset and full moon are stunning. Quieter on weekdays.',
+    keys:'skywalk kanchanaburi cam glass panorama nehir river kwai manzara view gün batımı sunset'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Tham Krasae Demiryolu Köprüsü', name_en:'Tham Krasae Railway Bridge', thai:'สะพานถ้ำกระแซ',
+    desc_tr:'Ölüm Demiryolu\'nun en dramatik bölümü — ahşap iskeleler kayalığa yapışmış, altında nehir akıyor. Tren geçerken izlemek çok etkileyici. İstasyonda inip ray boyunca yürünebilir (alt yoldan güvenle). 100 ฿.',
+    desc_en:'The most dramatic section of the Death Railway — wooden trestles cling to the cliff face, river flowing below. Watching a train pass is very impressive. Get off at the station and walk along the tracks (safely via a lower path). 100 ฿.',
+    price:'100 ฿',
+    hours:'Tren saatlerine bağlı',
+    getthere:'Kanchanaburi\'den tren (~2 saat) · Lum Sum, Sai Yok',
+    tip_tr:'Tren saatlerini önceden kontrol et; sonraki treni kaçırırsan geri dönmek zor (Grab burada çalışmaz). Kanchanaburi\'den günübirlik mümkün.',
+    tip_en:'Check train times in advance; miss the next one and getting back is hard (no Grab here). Day-trippable from Kanchanaburi.',
+    keys:'tham krasae demiryolu köprü railway bridge ölüm death kayalık cliff tren train nehir river ww2 dramatik sai yok'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Sai Yok Noi Şelalesi', name_en:'Sai Yok Noi Waterfall', thai:'น้ำตกไซยกน้อย',
+    desc_tr:'Kanchanaburi\'nin batısında, otopark yanında kolay erişimli şelale. Kireçtaşı katmanları üzerinden akan suyun güzel manzarası, altındaki havuzda yüzülebilir (yağmur mevsimi hariç). Yanında eski tren vagonu (fotoğraf için) ve kahve dükkânı.',
+    desc_en:'An easily accessible waterfall in western Kanchanaburi, right by the car park. Water flowing over limestone layers, a scenic backdrop; swimming in the pool below (except rainy season). An old train carriage nearby (for photos) and a coffee shop.',
+    price:'Ücretsiz / düşük',
+    hours:'08:00–17:00',
+    getthere:'Sai Yok, Kanchanaburi · Kanchanaburi\'den tren (Sai Yok Noi İstasyonu) veya araç',
+    tip_tr:'Trenle gelmek güzel bir deneyim ama uzun (~2 saat). Erawan\'a gidiyorsan farklı yöndedir, aynı günde zor.',
+    tip_en:'Coming by train is a lovely experience but long (~2 hrs). If heading to Erawan, it\'s a different direction — hard to do both in one day.',
+    keys:'sai yok noi şelale waterfall kanchanaburi yüzme swimming kireçtaşı limestone tren train doğa nature'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Erawan Milli Parkı', name_en:'Erawan National Park', thai:'อุทยานแห่งชาติเอราวัณ',
+    desc_tr:'Kanchanaburi\'nin batısında 7 katlı şelale sistemiyle ünlü milli park. Her kat farklı bir güzellikte; 1-2. katlar kolay erişimli, 7. kata kadar yürüyüş 1.5+ saat (gidiş). Turkuaz havuzlarda yüzülebilir. 300 ฿ yabancı girişi. Su şişesine damga (20 ฿ depozito, çıkışta iade — çöp bırakma motivasyonu).',
+    desc_en:'A national park famous for its 7-tiered waterfall system in western Kanchanaburi. Each tier a different beauty; tiers 1-2 are easy, hiking to tier 7 takes 1.5+ hrs (one way). Swim in turquoise pools. 300 ฿ foreign entry. Water-bottle stamp system (20 ฿ deposit, refunded on exit — litter motivation).',
+    price:'300 ฿ yabancı · 100 ฿ Tay',
+    hours:'08:00–16:30 (son giriş)',
+    getthere:'Si Sawat, Kanchanaburi · Kanchanaburi şehir merkezinden ~65 km',
+    tip_tr:'09:00\'da aç, kalabalıktan önce gel. Üst katlara yüzerken fotoğraf için su geçirmez kılıf al. Yemek parkın girişinden al (içeride yok). Srinagarind Barajı yakınında — birleştirilebilir.',
+    tip_en:'Opens 09:00, arrive before the crowds. Bring a waterproof phone case for swimming photos. Get food at the entrance (none inside). Near Srinagarind Dam — combinable.',
+    keys:'erawan milli park national park şelale waterfall 7 kat tier turkuaz yüzme swimming kanchanaburi si sawat doğa nature yürüyüş hiking'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Srinagarind Barajı', name_en:'Srinagarind Dam', thai:'เขื่อนศรีนครินทร์',
+    desc_tr:'Erawan Milli Parkı yakınında büyük baraj ve göl. Sakin manzara, yeşil dağlar, tekne turu yapılabilen geniş göl. Erawan ziyaretiyle birleştirilebilir ama park+baraj tam gün sürer.',
+    desc_en:'A large dam and lake near Erawan National Park. Calm scenery, green mountains, a wide lake for boat tours. Combinable with an Erawan visit but park+dam takes a full day.',
+    price:'Ücretsiz (tekne turu ayrı)',
+    hours:'Gündüz',
+    getthere:'Si Sawat, Kanchanaburi · Erawan yakını',
+    tip_tr:'Erawan\'dan sonra yolun devamında; manzara güzel ama Erawan kadar "mutlaka" değil.',
+    tip_en:'Further along the road from Erawan; scenic but not as "must-see" as Erawan itself.',
+    keys:'srinagarind baraj dam göl lake kanchanaburi si sawat erawan manzara tekne boat doğa nature'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Talad Noi Museum', name_en:'Talad Noi Museum', thai:'พิพิธภัณฑ์ตลาดน้อย',
+    desc_tr:'Talat Noi\'nin tarihini anlatan küçük, ücretsiz, üç katlı müze. Çin göçmenlerinin hikâyesi, tarihi fotoğraflar, çocuklar için aktiviteler (damga/mühür basma). Klimalı — sıcaktan kaçış. Nehir kenarında sessiz bir bahçe alanı. Kısa tarih videosu belirli saatlerde gösteriliyor.',
+    desc_en:'A small, free, three-floor museum telling the history of Talat Noi. The story of Chinese immigrants, historic photos, activities for kids (stamping). Air-conditioned — an escape from the heat. A quiet garden area by the river. Short history video shown at scheduled times.',
+    price:'Ücretsiz',
+    hours:'Sal–Cuma 08:30–16:30, Cmt–Paz 10:00–18:00, Pzt kapalı',
+    getthere:'Song Wat Rd, Talat Noi · MRT Hua Lamphong\'tan yürüme',
+    tip_tr:'Talat Noi yürüyüşüne başlarken güzel bir bağlam sağlar. Dışarıdaki yemek tezgâhları mola için ideal.',
+    tip_en:'A good starting point to put your Talat Noi walk in context. Food stalls outside are ideal for a break.',
+    keys:'talad noi museum müze talat noi çin chinese göçmen tarih history damga stamp ücretsiz free nehir river song wat'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Che Chin Koh', name_en:'Wat Che Chin Koh', thai:'วัดเจ๊ฉิ่นโค้ว',
+    desc_tr:'Khlong San\'da, nehirden çok göze çarpan yüksek Çin pagodası olan küçük bir Taoizm tapınağı. Karadan bulmak zor ama nehirden hemen görülür. İçerideki ana bina iki kat daha yükseliyor, beklentinin ötesinde güzel.',
+    desc_en:'A small Taoist temple in Khlong San with a tall Chinese pagoda highly visible from the river. Hard to find by land but immediately visible from the water. The main building rises two extra floors, surprisingly beautiful.',
+    price:'Ücretsiz',
+    hours:'≈07:00–16:00',
+    getthere:'Soi Chiang Mai, Khlong San · Lhong 1919 yakını · ICON Siam yakını',
+    tip_tr:'Lhong 1919\'dan uzun bir dolambaç; kanal/nehir tarafından daha kolay. Fotoğrafçılar için güzel.',
+    tip_en:'A long detour from Lhong 1919; easier from the canal/river side. Great for photographers.',
+    keys:'wat che chin koh tapınak temple taoizm taoist pagoda çin chinese khlong san lhong nehir river'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Kalayanamit', name_en:'Wat Kalayanamit', thai:'วัดกัลยาณมิตร',
+    desc_tr:'Thonburi\'de nehir kıyısında büyük bir Budist tapınak; dev oturan Buda heykeli ile bilinir. Yeni boyanmış, bakımlı. Kraliyet Deniz Kuvvetleri karargâhının yanında. Ücretsiz ve sakin.',
+    desc_en:'A large Buddhist temple on the Thonburi riverside; known for its large seated Buddha. Freshly painted, well-maintained. Next to the Royal Thai Navy HQ. Free and quiet.',
+    price:'Ücretsiz',
+    hours:'07:00–17:00 her gün',
+    getthere:'Thonburi, Soi Wat Kanlaya · nehir teknesi',
+    tip_tr:'Kudi Chin / Santa Cruz yakınında; Thonburi kanal turuyla birleştirilebilir.',
+    tip_en:'Near Kudi Chin / Santa Cruz; can be combined with the Thonburi canal tour.',
+    keys:'wat kalayanamit tapınak temple thonburi nehir büyük buda oturan seated navy donanma kudi chin'
+  },
+  {
+    type:'temple', cat:['temple'],
+    name_tr:'Wat Mangkon Kamalawat (Ejderha Tapınağı)', name_en:'Wat Mangkon Kamalawat (Dragon Temple)', thai:'วัดมังกรกมลาวาส',
+    desc_tr:'Chinatown\'ın kalbinde, en önemli Çin Budist tapınağı. Muhteşem Çin mimarisi, canlı renkler, detaylı oymalar. Çin Yeni Yılı\'nda en hareketli yer — ejderha dansları, davullar, tütsü. Servet Tanrısı\'na dua ve kötü şansı kovma ritüelleriyle bilinir.',
+    desc_en:'The most important Chinese Buddhist temple in the heart of Chinatown. Magnificent Chinese architecture, vivid colours, intricate carvings. Busiest spot during Chinese New Year — dragon dances, drums, incense. Known for prayers to the God of Wealth and rituals to ward off bad luck.',
+    price:'Ücretsiz (bağış)',
+    hours:'08:00–16:30 (hafta sonu 17:30)',
+    getthere:'Charoen Krung Rd · MRT Wat Mangkon (hemen yanı)',
+    tip_tr:'Çin Yeni Yılı\'nda git — atmosfer inanılmaz. Bağış için nakit ve QR ödeme var.',
+    tip_en:'Visit during Chinese New Year — the atmosphere is incredible. Cash and QR donations accepted.',
+    keys:'wat mangkon kamalawat ejderha dragon çin chinese budist chinatown yaowarat tütsü incense yeni yıl new year servet wealth'
+  },
+  {
+    type:'museum', cat:['museum'],
+    name_tr:'Thai Stamp Museum', name_en:'Thai Stamp Museum', thai:'พิพิธภัณฑ์ตราไปรษณียากร',
+    desc_tr:'BTS Saphan Khwai yakınında, posta binasının arkasında küçük ama güzel bir pul müzesi. Tayland posta tarihini, pul yapım sürecini anlatıyor; dünyanın her yerinden pulların bulunduğu duvar etkileyici. Çocuklar kendi kartpostalını damgalayabiliyor. Ücretsiz.',
+    desc_en:'A small but lovely stamp museum behind the post office near BTS Saphan Khwai. Covers Thai postal history and stamp-making; the wall of stamps from around the world is impressive. Kids can stamp their own postcards. Free.',
+    price:'Ücretsiz',
+    hours:'Çar–Paz 08:30–16:30, Pzt–Sal kapalı',
+    getthere:'Phahon Yothin Rd 1553 · BTS Saphan Khwai',
+    tip_tr:'Personel çok yardımsever, ücretsiz kartpostal da verebiliyorlar. Pul meraklıları için cennet.',
+    tip_en:'Staff very helpful, they sometimes give free postcards. Heaven for stamp enthusiasts.',
+    keys:'thai stamp museum pul müze posta postal saphan khwai kartpostal postcard ücretsiz free çocuk'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'SPACEBAR ZINE', name_en:'SPACEBAR ZINE', thai:'',
+    desc_tr:'Ratchathewi\'de GalileOasis alanında bağımsız zine, sanat baskıları ve kitapçı dükkânı. Film, müzik, Japon ve pop-art esintili eserler, mini film posterleri, renkli Buda figürleri. Girişi gizli bir ara sokaktan; önünde bir kafe var.',
+    desc_en:'An independent zine, art print and bookshop in the GalileOasis space in Ratchathewi. Film, music, Japanese and pop-art inspired works, mini movie posters, colourful Buddha figurines. Hidden alley entrance; a café near the front.',
+    price:'Değişir',
+    hours:'Çar–Pzt 11:00–19:00, Sal kapalı',
+    getthere:'Soi Rong Rian King Phet, Ratchathewi',
+    tip_tr:'Galerie des Amis de aynı alanda — ikisini birlikte gez.',
+    tip_en:'Galerie des Amis is in the same space — visit both together.',
+    keys:'spacebar zine kitapçı bookshop sanat art baskı print bağımsız independent ratchathewi galileoasis buda figurine'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Galerie des Amis', name_en:'Galerie des Amis', thai:'',
+    desc_tr:'SPACEBAR ZINE ile aynı GalileOasis alanında; sanat galerisi + giyim + aksesuar mağazası. Sahibinin tasarladığı Miura giyim markası (kaliteli, özgün tasarım); vintage Fransız kitaplar, çerçeveli baskılar, kasetler. Sıcak karşılama, nostaljik atmosfer.',
+    desc_en:'In the same GalileOasis space as SPACEBAR ZINE; art gallery + clothing + accessories shop. The owner\'s Miura clothing brand (quality, distinctive design); vintage French books, framed prints, cassettes. Warm welcome, nostalgic atmosphere.',
+    price:'Değişir',
+    hours:'Çar–Pzt 11:00–19:00, Sal kapalı',
+    getthere:'Soi Rong Rian King Phet, Ratchathewi',
+    tip_tr:'Kadın giyim, sanat baskıları ve hediyelik eşya için gizli hazine.',
+    tip_en:'A hidden treasure for women\'s clothing, art prints and gifts.',
+    keys:'galerie des amis galeri sanat art giyim clothing miura vintage aksesuar mağaza shop ratchathewi galileoasis'
+  },
+  {
+    type:'area', cat:['area'],
+    name_tr:'Loy La Long Hotel', name_en:'Loy La Long Hotel', thai:'',
+    desc_tr:'Talat Noi / Song Wat\'ta nehir kıyısında, tapınak arazisi içinde küçük bir butik otel. Geleneksel Tay dekorasyonu, nehir manzaralı balkon, romantik atmosfer. Otel müşterisi olmasan da kafesine/barına oturup kokteyl içebilir, nehri seyredebilirsin.',
+    desc_en:'A small riverside boutique hotel in Talat Noi / Song Wat, within a temple compound. Traditional Thai décor, river-view balcony, romantic atmosphere. Even if not a guest, you can sit at the café/bar for a cocktail and watch the river.',
+    price:'Otel ~₿2,500+/gece · içecek ~₿150–300',
+    hours:'Kafe 09:00–20:00',
+    getthere:'Talat Noi, Song Wat nehir kıyısı',
+    tip_tr:'Uzun bir yürüyüşten sonra nehir kenarında kokteyl içmek için harika bir mola. Song Wat / Talat Noi gezisinin güzel finali olabilir.',
+    tip_en:'A great stop for a riverside cocktail after a long walk. Can be a lovely finale to a Song Wat / Talat Noi visit.',
+    keys:'loy la long hotel otel butik boutique nehir river talat noi song wat kokteyl cocktail kafe bar manzara romantik'
+  },
+];
+
+/* ---------- i18n ---------- */
+const I18N = {
+  tr:{ kicker:'Tur Rehberi Ajanı', sub:'Tapınaklar, müzeler, çarşılar ve yemek. Bir şey sor, rehber gibi cevap vereyim — internet gerekmez.',
+    ph:'Ne sormak istersin? örn: Wat Pho giriş, Chinatown yemek, sunset tapınak…',
+    price:'Ücret', hours:'Saat', get:'Ulaşım', tip:'İpucu',
+    all:'Hepsi', temple:'Tapınaklar', museum:'Müzeler', market:'Çarşı & Pazar', food:'Yemek & Restoran', cafe:'Kafe', area:'Alan & Park', tip_c:'İpuçları',
+    none:'Bununla eşleşen bir şey bulamadım. Başka kelimelerle dene.', count:(n)=>`${n} sonuç`, src:'Kaynak: Fodor\'s + güncel web' },
+  en:{ kicker:'Tour Guide Agent', sub:'Temples, museums, markets and food. Ask anything, I\'ll answer like a guide — no internet needed.',
+    ph:'What do you want to know? e.g. Wat Pho entry, Chinatown food, sunset temple…',
+    price:'Price', hours:'Hours', get:'Getting there', tip:'Tip',
+    all:'All', temple:'Temples', museum:'Museums', market:'Markets', food:'Food & Restaurants', cafe:'Cafés', area:'Areas & Parks', tip_c:'Tips',
+    none:'Nothing matched. Try different words.', count:(n)=>`${n} results`, src:'Source: Fodor\'s + current web' }
+};
+
+let LANG='tr', FILTER='all';
+const CHIPS=['all','temple','museum','market','food','cafe','area','tip'];
+
+function setLang(l){
+  LANG=l;
+  document.getElementById('tr').classList.toggle('on',l==='tr');
+  document.getElementById('en').classList.toggle('on',l==='en');
+  const t=I18N[l];
+  document.getElementById('kicker').textContent=t.kicker;
+  document.getElementById('sub').textContent=t.sub;
+  document.getElementById('q').placeholder=t.ph;
+  document.documentElement.lang=l;
+  buildChips(); render();
+  if(document.getElementById('pane-map').classList.contains('on')){ buildMap(); }
+}
+
+function buildChips(){
+  const t=I18N[LANG];
+  const labels={all:t.all,temple:t.temple,museum:t.museum,market:t.market,food:t.food,cafe:t.cafe,area:t.area,tip:t.tip_c};
+  document.getElementById('chips').innerHTML=CHIPS.map(c=>
+    `<button class="chip ${FILTER===c?'on':''}" onclick="setFilter('${c}')">${labels[c]}</button>`).join('');
+}
+function setFilter(c){ FILTER=c; buildChips(); render(); }
+function clearQ(){ document.getElementById('q').value=''; render(); document.getElementById('q').focus(); }
+
+function score(item,q){
+  if(!q) return 1;
+  const hay=(item.keys+' '+item.name_tr+' '+item.name_en+' '+item.desc_tr+' '+item.desc_en).toLowerCase();
+  const words=q.toLowerCase().split(/\s+/).filter(Boolean);
+  let s=0;
+  for(const w of words){ if(hay.includes(w)) s++; }
+  return words.length? s/words.length : 1;
+}
+
+function render(){
+  const q=document.getElementById('q').value.trim();
+  const t=I18N[LANG];
+  let items=DATA.filter(d=> FILTER==='all'? true : d.cat.includes(FILTER));
+  if(q){
+    items=items.map(d=>({d,s:score(d,q)})).filter(x=>x.s>0)
+      .sort((a,b)=>b.s-a.s).map(x=>x.d);
+  }
+  const res=document.getElementById('results');
+  const cnt=document.getElementById('count');
+  if(items.length===0){
+    cnt.textContent='';
+    res.innerHTML=`<div class="empty">${t.none}</div>`;
+    return;
+  }
+  cnt.textContent=t.count(items.length);
+  res.innerHTML=items.map((d,i)=>card(d,i,t)).join('');
+}
+
+function card(d,i,t){
+  const name=LANG==='tr'?d.name_tr:d.name_en;
+  const desc=LANG==='tr'?d.desc_tr:d.desc_en;
+  const tip=LANG==='tr'?d.tip_tr:d.tip_en;
+  const tagLabel={temple:t.temple,museum:t.museum,market:t.market,food:t.food,cafe:t.cafe,area:t.area,tip:t.tip_c}[d.type];
+  const tagClass='t-'+d.type;
+  let facts='';
+  if(d.price&&d.price!=='—') facts+=`<span class="fact"><span class="ic">฿</span><b>${t.price}:</b> ${d.price}</span>`;
+  if(d.hours&&d.hours!=='—') facts+=`<span class="fact"><span class="ic">◷</span><b>${t.hours}:</b> ${d.hours}</span>`;
+  if(d.getthere&&d.getthere!=='—') facts+=`<span class="fact"><span class="ic">➜</span><b>${t.get}:</b> ${d.getthere}</span>`;
+  return `<div class="card" style="animation-delay:${i*0.04}s">
+    <div class="card-top">
+      <h3>${name}</h3>
+      ${d.thai?`<span class="thai">${d.thai}</span>`:''}
+      <span class="tag ${tagClass}">${tagLabel}</span>
+    </div>
+    <p>${desc}</p>
+    ${tip?`<p style="color:var(--gold-deep)"><b>${t.tip}:</b> ${tip}</p>`:''}
+    ${facts?`<div class="facts">${facts}</div>`:''}
+    <div class="src">${t.src}</div>
+  </div>`;
+}
+
+/* ---------- Tabs & Map ---------- */
+function setTab(which){
+  document.getElementById('tab-guide').classList.toggle('on', which==='guide');
+  document.getElementById('tab-map').classList.toggle('on', which==='map');
+  document.getElementById('pane-guide').classList.toggle('on', which==='guide');
+  document.getElementById('pane-map').classList.toggle('on', which==='map');
+  if(which==='map'){ buildMap(); }
+}
+
+function buildMap(){
+  // route picker
+  document.getElementById('routePicker').innerHTML = ROUTES.map((r,i)=>
+    `<button class="rbtn ${CUR_ROUTE===i?'on':''}" onclick="selectRoute(${i})">${LANG==='tr'?r.title_tr:r.title_en}</button>`).join('');
+  const R = ROUTES[CUR_ROUTE];
+  const intro=document.getElementById('routeIntro');
+  intro.innerHTML = '<b>'+(LANG==='tr'?R.title_tr:R.title_en)+'</b><br>'+(LANG==='tr'?R.intro_tr:R.intro_en);
+  document.getElementById('stopList').innerHTML = R.stops.map((s,i)=>{
+    const n=LANG==='tr'?s.n_tr:s.n_en, d=LANG==='tr'?s.d_tr:s.d_en;
+    return `<div class="stop" onclick="flyTo(${i})">
+      <div class="num">${i+1}</div>
+      <div class="info"><h4>${n}</h4><div class="time">${s.t}</div><p>${d}</p></div>
+    </div>`;
+  }).join('');
+  drawRoute();
+}
+
+function drawRoute(){
+  const R = ROUTES[CUR_ROUTE];
+  if(MAP){ MAP.remove(); MAP=null; }
+  MAP = L.map('map').setView([13.74,100.49], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '© OpenStreetMap'
+  }).addTo(MAP);
+  const color = R.mode==='boat' ? '#2c5f5a' : '#8c2f24';
+  const latlngs=[];
+  R.stops.forEach((s,i)=>{
+    latlngs.push([s.lat,s.lng]);
+    const icon = L.divIcon({
+      className:'', html:`<div style="background:${color};color:#fff;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:serif;font-weight:600;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,0.4);border:2px solid #fffaf2">${i+1}</div>`,
+      iconSize:[28,28], iconAnchor:[14,14]
+    });
+    const n=LANG==='tr'?s.n_tr:s.n_en, d=LANG==='tr'?s.d_tr:s.d_en;
+    L.marker([s.lat,s.lng],{icon}).addTo(MAP)
+      .bindPopup(`<b>${i+1}. ${n}</b><br><span style="color:#b8862f">${s.t}</span><br>${d}`);
+  });
+  L.polyline(latlngs,{color:color,weight:3,dashArray:'8,7',opacity:0.85}).addTo(MAP);
+  MAP.fitBounds(latlngs,{padding:[45,45]});
+  setTimeout(()=>MAP.invalidateSize(),200);
+}
+
+function selectRoute(i){
+  CUR_ROUTE = i;
+  buildMap();
+}
+
+function flyTo(i){
+  const s=ROUTES[CUR_ROUTE].stops[i];
+  if(MAP){ MAP.flyTo([s.lat,s.lng],16,{duration:0.8}); }
+}
+
+document.getElementById('q').addEventListener('input', render);
+buildChips(); render();
+
+</script>
+</body>
+</html>
